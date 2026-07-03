@@ -20,8 +20,22 @@ async function request(endpoint, options = {}) {
   if (config.body && typeof config.body === 'object') {
     config.body = JSON.stringify(config.body);
   }
+
+  let url = `${API_URL}${endpoint}`;
+  if (options.params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(options.params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        searchParams.append(key, val);
+      }
+    });
+    const queryString = searchParams.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+  }
   
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+  const response = await fetch(url, config);
   
   if (response.status === 204) {
     return null;
