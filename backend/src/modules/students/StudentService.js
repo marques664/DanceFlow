@@ -88,6 +88,11 @@ class StudentService {
             guardian: true,
           },
         },
+        classes: {
+          include: {
+            class: true,
+          },
+        },
       },
       orderBy: {
         name: "asc",
@@ -106,6 +111,7 @@ class StudentService {
         notes: s.notes,
         plan: s.plan,
         status: s.isActive ? "Ativa" : "Inativa",
+        classes: s.classes.map((c) => c.class.name),
         guardian: mainLink ? {
           id: mainLink.guardian.id,
           name: mainLink.guardian.name,
@@ -130,6 +136,11 @@ class StudentService {
             guardian: true,
           },
         },
+        classes: {
+          include: {
+            class: true,
+          },
+        },
       },
     });
 
@@ -147,6 +158,7 @@ class StudentService {
       notes: student.notes,
       plan: student.plan,
       status: student.isActive ? "Ativa" : "Inativa",
+      classes: student.classes.map((c) => c.class.name),
       guardian: mainLink ? {
         id: mainLink.guardian.id,
         name: mainLink.guardian.name,

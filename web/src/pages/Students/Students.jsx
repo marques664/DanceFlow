@@ -32,11 +32,15 @@ export function Students() {
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianKinship, setGuardianKinship] = useState('Mãe');
 
+  const [classesList, setClassesList] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
     fetchStudents();
+    fetchClasses();
   }, []);
 
   const fetchStudents = async () => {
@@ -52,6 +56,15 @@ export function Students() {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const data = await api.get('/classes');
+      setClassesList(data || []);
+    } catch (err) {
+      console.error('Erro ao carregar turmas:', err);
+    }
+  };
+
   const handleOpenCreate = () => {
     if (!isAdmin) return;
     setName('');
@@ -63,6 +76,7 @@ export function Students() {
     setGuardianPhone('');
     setGuardianEmail('');
     setGuardianKinship('Mãe');
+    setSelectedClassId(classesList[0]?.id || '');
     setFormError('');
     setShowCreateModal(true);
   };
@@ -77,7 +91,7 @@ export function Students() {
     setFormLoading(true);
     setFormError('');
     try {
-      await api.post('/students', {
+      const newStudent = await api.post('/students', {
         name,
         birthDate,
         phone,
@@ -90,6 +104,13 @@ export function Students() {
           kinship: guardianKinship
         }
       });
+
+      if (selectedClassId) {
+        await api.post(`/classes/${selectedClassId}/students`, {
+          studentId: newStudent.id
+        });
+      }
+
       setShowCreateModal(false);
       fetchStudents();
     } catch (err) {
@@ -213,10 +234,13 @@ export function Students() {
                   </td>
                   <td>
                     <div className="classes-badges-list">
-                      {/* Turmas are mocked for now as classes table is pending */}
-                      {(s.classes || ['Ballet Infantil A']).map((cls, idx) => (
-                        <span key={idx} className="class-badge-item">{cls}</span>
-                      ))}
+                      {(s.classes || []).length > 0 ? (
+                        (s.classes || []).map((cls, idx) => (
+                          <span key={idx} className="class-badge-item">{cls}</span>
+                        ))
+                      ) : (
+                        <span className="text-muted text-xs">Sem turma</span>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -292,7 +316,11 @@ export function Students() {
                 </div>
                 <div className="info-block">
                   <span className="info-label">Turmas Vinculadas</span>
-                  <span className="info-value">{(selectedStudent.classes || ['Ballet Infantil A']).join(', ')}</span>
+                  <span className="info-value">
+                    {(selectedStudent.classes || []).length > 0
+                      ? (selectedStudent.classes || []).join(', ')
+                      : 'Nenhuma turma vinculada'}
+                  </span>
                 </div>
               </div>
 
@@ -427,10 +455,14 @@ export function Students() {
                     <select
                       id="student-class"
                       className="form-input form-select"
-                      disabled={true}
-                      value="1"
+                      value={selectedClassId}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      disabled={formLoading}
                     >
-                      <option value="1">Ballet Infantil A</option>
+                      <option value="">Nenhuma turma</option>
+                      {classesList.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
