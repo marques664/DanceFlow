@@ -1,0 +1,18 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 1rem;
+  background: var(--bg-primary);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+}
+
+.app-content {
+  margin-left: calc(var(--sidebar-width) + 1.5rem);
+  flex-grow: 1;
+  padding: 1rem 1.5rem 1.5rem;
+  min-height: calc(100vh - 2rem);
+  width: calc(100vw - var(--sidebar-width) - 3.5rem);
+  overflow-y: auto;
+}
