@@ -8,7 +8,8 @@ import {
   CheckSquare, 
   LogOut,
   Sparkles,
-  GraduationCap
+  GraduationCap,
+  FileText
 } from 'lucide-react';
 import { logout, getCurrentUser } from '../services/auth';
 import './Sidebar.css';
@@ -30,6 +31,10 @@ export function Sidebar() {
     { to: '/teachers', icon: <GraduationCap size={20} />, label: 'Professoras' },
     { to: '/attendance', icon: <CheckSquare size={20} />, label: 'Frequência' },
   ];
+
+  if (user && user.role === 'ADMIN') {
+    navItems.push({ to: '/reports', icon: <FileText size={20} />, label: 'Relatórios' });
+  }
 
   return (
     <aside className="sidebar glass-card">

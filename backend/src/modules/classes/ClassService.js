@@ -38,7 +38,7 @@ class ClassService {
     return lessons;
   }
 
-  async create(schoolId, { name, modalityId, mainTeacherId, secondaryTeachers = [], schedules = [] }) {
+  async create(schoolId, userId, { name, modalityId, mainTeacherId, secondaryTeachers = [], schedules = [] }) {
     // 1. Verify Modality
     const modality = await prisma.modality.findFirst({
       where: { id: modalityId, schoolId, isActive: true }
@@ -105,6 +105,18 @@ class ClassService {
           data: lessonsData
         });
       }
+
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "CREATE_CLASS",
+          details: JSON.stringify({
+            classId: dbClass.id,
+            className: dbClass.name
+          })
+        }
+      });
 
       return {
         id: dbClass.id,
@@ -184,7 +196,7 @@ class ClassService {
     return c;
   }
 
-  async delete(schoolId, id) {
+  async delete(schoolId, userId, id) {
     const c = await prisma.class.findFirst({
       where: { id, schoolId, isActive: true }
     });
@@ -193,10 +205,24 @@ class ClassService {
       throw new AppError("Class not found.", 404);
     }
 
-    // Soft delete class (logical deletion - Spec 9.7)
-    await prisma.class.update({
-      where: { id },
-      data: { isActive: false }
+    return prisma.$transaction(async (tx) => {
+      // Soft delete class (logical deletion - Spec 9.7)
+      await tx.class.update({
+        where: { id },
+        data: { isActive: false }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "INACTIVATE_CLASS",
+          details: JSON.stringify({
+            classId: id,
+            className: c.name
+          })
+        }
+      });
     });
   }
 

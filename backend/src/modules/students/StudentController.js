@@ -103,6 +103,7 @@ class StudentController {
 
     const student = await this.studentService.update(
       req.user.schoolId,
+      req.user.id,
       id,
       parsedData.data
     );
@@ -116,7 +117,7 @@ class StudentController {
     }
 
     const { id } = req.params;
-    await this.studentService.delete(req.user.schoolId, id);
+    await this.studentService.delete(req.user.schoolId, req.user.id, id);
 
     return res.status(204).send();
   }

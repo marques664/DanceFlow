@@ -17,7 +17,7 @@ lessonRouter.get("/:id", (req, res, next) => {
   lessonController.findById(req, res).catch(next);
 });
 
-lessonRouter.post("/", ensureRole(["ADMIN"]), (req, res, next) => {
+lessonRouter.post("/", (req, res, next) => {
   lessonController.create(req, res).catch(next);
 });
 

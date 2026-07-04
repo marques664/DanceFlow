@@ -47,6 +47,7 @@ class ClassController {
 
     const newClass = await this.classService.create(
       req.user.schoolId,
+      req.user.id,
       parsedData.data
     );
 
@@ -68,7 +69,7 @@ class ClassController {
     }
 
     const { id } = req.params;
-    await this.classService.delete(req.user.schoolId, id);
+    await this.classService.delete(req.user.schoolId, req.user.id, id);
 
     return res.status(204).send();
   }

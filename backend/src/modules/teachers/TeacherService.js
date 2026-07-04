@@ -61,7 +61,7 @@ class TeacherService {
     return teachers;
   }
 
-  async update(schoolId, id, { name, email, password }) {
+  async update(schoolId, userId, id, { name, email, password }) {
     const teacher = await prisma.user.findFirst({
       where: { id, schoolId, role: "TEACHER", isActive: true }
     });
@@ -86,22 +86,36 @@ class TeacherService {
       updateData.password = await bcrypt.hash(password, 8);
     }
 
-    const updated = await prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true
-      }
-    });
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isActive: true
+        }
+      });
 
-    return updated;
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "UPDATE_TEACHER",
+          details: JSON.stringify({
+            teacherId: id,
+            updatedFields: Object.keys(updateData).filter(k => k !== "password")
+          })
+        }
+      });
+
+      return updated;
+    });
   }
 
-  async delete(schoolId, id) {
+  async delete(schoolId, userId, id) {
     const teacher = await prisma.user.findFirst({
       where: { id, schoolId, role: "TEACHER", isActive: true }
     });
@@ -110,10 +124,24 @@ class TeacherService {
       throw new AppError("Teacher not found.", 404);
     }
 
-    // Soft delete (logical deletion - Spec 9.7)
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: false }
+    return prisma.$transaction(async (tx) => {
+      // Soft delete (logical deletion - Spec 9.7)
+      await tx.user.update({
+        where: { id },
+        data: { isActive: false }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "INACTIVATE_TEACHER",
+          details: JSON.stringify({
+            teacherId: id,
+            teacherName: teacher.name
+          })
+        }
+      });
     });
   }
 }

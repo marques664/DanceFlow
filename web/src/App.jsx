@@ -8,6 +8,7 @@ import { Students } from './pages/Students/Students';
 import { Classes } from './pages/Classes/Classes';
 import { Teachers } from './pages/Teachers/Teachers';
 import { Attendance } from './pages/Attendance/Attendance';
+import { Reports } from './pages/Reports/Reports';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="classes" element={<Classes />} />
           <Route path="teachers" element={<Teachers />} />
           <Route path="attendance" element={<Attendance />} />
+          <Route path="reports" element={<Reports />} />
         </Route>
 
         {/* Fallback redirect to Dashboard */}

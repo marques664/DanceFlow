@@ -169,7 +169,7 @@ class StudentService {
     };
   }
 
-  async update(schoolId, id, { name, birthDate, phone, notes, plan, guardian }) {
+  async update(schoolId, userId, id, { name, birthDate, phone, notes, plan, guardian }) {
     return prisma.$transaction(async (tx) => {
       // 1. Check if student exists
       const student = await tx.student.findFirst({
@@ -181,6 +181,19 @@ class StudentService {
         include: {
           guardians: true,
         },
+      });
+
+      // Register Audit Log (Rule 3.7)
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "UPDATE_STUDENT",
+          details: JSON.stringify({
+            studentId: id,
+            updatedFields: Object.keys({ name, birthDate, phone, notes, plan, guardian }).filter(k => ({ name, birthDate, phone, notes, plan, guardian }[k] !== undefined))
+          })
+        }
       });
 
       if (!student) {
@@ -271,7 +284,7 @@ class StudentService {
     });
   }
 
-  async delete(schoolId, id) {
+  async delete(schoolId, userId, id) {
     // 1. Check if student exists
     const student = await prisma.student.findFirst({
       where: {
@@ -285,12 +298,27 @@ class StudentService {
       throw new AppError("Student not found.", 404);
     }
 
-    // 2. Logical delete (Soft delete - Spec 3.2 & 9.7)
-    await prisma.student.update({
-      where: { id },
-      data: {
-        isActive: false,
-      },
+    return prisma.$transaction(async (tx) => {
+      // 2. Logical delete (Soft delete - Spec 3.2 & 9.7)
+      await tx.student.update({
+        where: { id },
+        data: {
+          isActive: false,
+        },
+      });
+
+      // 3. Register Audit Log (Rule 3.7)
+      await tx.auditLog.create({
+        data: {
+          schoolId,
+          userId,
+          action: "INACTIVATE_STUDENT",
+          details: JSON.stringify({
+            studentId: id,
+            studentName: student.name
+          })
+        }
+      });
     });
   }
 }

@@ -50,6 +50,13 @@ export function Attendance() {
   const [callStatus, setCallStatus] = useState('none');
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
+  // Create single lesson states
+  const [showCreateLessonModal, setShowCreateLessonModal] = useState(false);
+  const [newLessonTimeStart, setNewLessonTimeStart] = useState('18:00');
+  const [newLessonTimeEnd, setNewLessonTimeEnd] = useState('19:00');
+  const [newLessonType, setNewLessonType] = useState('REGULAR');
+  const [createLessonError, setCreateLessonError] = useState('');
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -250,6 +257,29 @@ export function Attendance() {
     }
   };
 
+  const handleCreateLesson = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setCreateLessonError('');
+    try {
+      const lesson = await api.post('/lessons', {
+        classId: selectedClass,
+        date,
+        timeStart: newLessonTimeStart,
+        timeEnd: newLessonTimeEnd,
+        type: newLessonType
+      });
+      setShowCreateLessonModal(false);
+      triggerNotification('Aula agendada com sucesso!', 'success');
+      // Reload lesson details
+      await fetchLessonDetails(lesson.id);
+    } catch (err) {
+      setCreateLessonError(err.message || 'Erro ao agendar aula.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const triggerNotification = (message, type) => {
     setNotification({ show: true, message, type });
     setTimeout(() => {
@@ -353,6 +383,10 @@ export function Attendance() {
           <Calendar size={48} className="empty-icon" />
           <h3>Nenhuma aula encontrada</h3>
           <p>Não há aulas agendadas para esta turma na data selecionada.</p>
+          <button className="btn btn-primary" onClick={() => setShowCreateLessonModal(true)} style={{ marginTop: '1.5rem' }}>
+            <Plus size={18} />
+            <span>Agendar Aula nesta Data</span>
+          </button>
         </div>
       ) : (
         <section className="attendance-sheet glass-card">
@@ -363,17 +397,17 @@ export function Attendance() {
             </div>
 
             <div className="sheet-header-actions">
+              {isAdmin && callStatus !== 'finalized' && (
+                <button className="btn btn-secondary btn-small" onClick={() => setShowAddTrial(true)}>
+                  <UserPlus size={16} />
+                  <span>Vincular Aluna Experimental</span>
+                </button>
+              )}
               {!isAdmin && callStatus !== 'finalized' && (
-                <>
-                  <button className="btn btn-secondary btn-small" onClick={() => setShowAddTrial(true)}>
-                    <UserPlus size={16} />
-                    <span>Vincular Aluna Experimental</span>
-                  </button>
-                  <button className="btn btn-secondary btn-small" onClick={handleMarkAllPresent}>
-                    <CheckSquare size={16} />
-                    <span>Marcar Todas Presentes</span>
-                  </button>
-                </>
+                <button className="btn btn-secondary btn-small" onClick={handleMarkAllPresent}>
+                  <CheckSquare size={16} />
+                  <span>Marcar Todas Presentes</span>
+                </button>
               )}
               
               {callStatus === 'draft' && (
@@ -489,6 +523,105 @@ export function Attendance() {
             </div>
           )}
         </section>
+      )}
+      {/* CREATE LESSON MODAL */}
+      {showCreateLessonModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content glass-card animate-fade-in modal-confirm" style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h2>Agendar Aula Especial / Regular</h2>
+              <button className="modal-close-btn" onClick={() => setShowCreateLessonModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            {createLessonError && (
+              <div className="modal-error">
+                <AlertCircle size={16} />
+                <span>{createLessonError}</span>
+              </div>
+            )}
+            
+            <form onSubmit={handleCreateLesson} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">Turma</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={classesList.find(c => c.id === selectedClass)?.name || ''}
+                  disabled={true}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Data</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={new Date(date + 'T12:00:00').toLocaleDateString('pt-BR')}
+                  disabled={true}
+                />
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="lesson-time-start">Início *</label>
+                  <input
+                    id="lesson-time-start"
+                    type="time"
+                    className="form-input"
+                    value={newLessonTimeStart}
+                    onChange={(e) => setNewLessonTimeStart(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="lesson-time-end">Término *</label>
+                  <input
+                    id="lesson-time-end"
+                    type="time"
+                    className="form-input"
+                    value={newLessonTimeEnd}
+                    onChange={(e) => setNewLessonTimeEnd(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="lesson-type-select">Tipo de Aula *</label>
+                <select
+                  id="lesson-type-select"
+                  className="form-input form-select"
+                  value={newLessonType}
+                  onChange={(e) => setNewLessonType(e.target.value)}
+                >
+                  <option value="REGULAR">Aula Regular</option>
+                  <option value="EXPERIMENTAL">Aula Experimental</option>
+                  <option value="PARTICULAR">Aula Particular</option>
+                </select>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowCreateLessonModal(false)}
+                  disabled={formLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={formLoading}
+                >
+                  {formLoading ? 'Agendando...' : 'Confirmar e Agendar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
