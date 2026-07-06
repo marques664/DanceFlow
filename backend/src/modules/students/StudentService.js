@@ -29,49 +29,55 @@ class StudentService {
         },
       });
 
-      // 2. Find or create the guardian (by name and phone match)
-      let dbGuardian = await tx.guardian.findFirst({
-        where: {
-          name: guardian.name,
-          phone: guardian.phone,
-        },
-      });
+      let returnGuardian = null;
 
-      if (!dbGuardian) {
-        dbGuardian = await tx.guardian.create({
-          data: {
+      if (guardian && guardian.name && guardian.phone) {
+        // 2. Find or create the guardian (by name and phone match)
+        let dbGuardian = await tx.guardian.findFirst({
+          where: {
             name: guardian.name,
             phone: guardian.phone,
-            email: guardian.email,
           },
         });
-      } else if (guardian.email && dbGuardian.email !== guardian.email) {
-        // Update email if provided and different
-        dbGuardian = await tx.guardian.update({
-          where: { id: dbGuardian.id },
-          data: { email: guardian.email },
+
+        if (!dbGuardian) {
+          dbGuardian = await tx.guardian.create({
+            data: {
+              name: guardian.name,
+              phone: guardian.phone,
+              email: guardian.email,
+            },
+          });
+        } else if (guardian.email && dbGuardian.email !== guardian.email) {
+          // Update email if provided and different
+          dbGuardian = await tx.guardian.update({
+            where: { id: dbGuardian.id },
+            data: { email: guardian.email },
+          });
+        }
+
+        // 3. Link student and guardian
+        await tx.studentGuardian.create({
+          data: {
+            studentId: student.id,
+            guardianId: dbGuardian.id,
+            kinship: guardian.kinship,
+          },
         });
-      }
 
-      // 3. Link student and guardian
-      await tx.studentGuardian.create({
-        data: {
-          studentId: student.id,
-          guardianId: dbGuardian.id,
-          kinship: guardian.kinship,
-        },
-      });
-
-      return {
-        ...student,
-        age: this.calculateAge(student.birthDate),
-        guardian: {
+        returnGuardian = {
           id: dbGuardian.id,
           name: dbGuardian.name,
           phone: dbGuardian.phone,
           email: dbGuardian.email,
           kinship: guardian.kinship,
-        },
+        };
+      }
+
+      return {
+        ...student,
+        age: this.calculateAge(student.birthDate),
+        guardian: returnGuardian,
       };
     });
   }
@@ -212,9 +218,14 @@ class StudentService {
         },
       });
 
-      // 3. Update guardian if provided
+      // 3. Update guardian if provided, or remove if null (18+ check)
       let returnGuardian = null;
-      if (guardian) {
+      if (guardian === null) {
+        // Disconnect guardian
+        await tx.studentGuardian.deleteMany({
+          where: { studentId: id }
+        });
+      } else if (guardian && guardian.name && guardian.phone) {
         const existingLink = student.guardians[0];
 
         if (existingLink) {
@@ -274,6 +285,16 @@ class StudentService {
             kinship: guardian.kinship,
           };
         }
+      } else if (student.guardians && student.guardians[0]) {
+        // Keep existing guardian in database output
+        const existingLink = student.guardians[0];
+        returnGuardian = {
+          id: existingLink.guardian.id,
+          name: existingLink.guardian.name,
+          phone: existingLink.guardian.phone,
+          email: existingLink.guardian.email,
+          kinship: existingLink.kinship,
+        };
       }
 
       return {

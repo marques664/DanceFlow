@@ -31,6 +31,7 @@ export function Students() {
   const [guardianPhone, setGuardianPhone] = useState('');
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianKinship, setGuardianKinship] = useState('Mãe');
+  const [isAdult, setIsAdult] = useState(false);
 
   const [classesList, setClassesList] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -76,6 +77,7 @@ export function Students() {
     setGuardianPhone('');
     setGuardianEmail('');
     setGuardianKinship('Mãe');
+    setIsAdult(false);
     setSelectedClassId(classesList[0]?.id || '');
     setFormError('');
     setShowCreateModal(true);
@@ -83,7 +85,8 @@ export function Students() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !birthDate || !phone.trim() || !guardianName.trim() || !guardianPhone.trim()) {
+    const hasGuardian = !isAdult;
+    if (!name.trim() || !birthDate || !phone.trim() || (hasGuardian && (!guardianName.trim() || !guardianPhone.trim()))) {
       setFormError('Por favor, preencha todos os campos obrigatórios (*).');
       return;
     }
@@ -97,12 +100,12 @@ export function Students() {
         phone,
         plan,
         notes: notes.trim() || undefined,
-        guardian: {
+        guardian: hasGuardian ? {
           name: guardianName.trim(),
           phone: guardianPhone.trim(),
           email: guardianEmail.trim() || undefined,
           kinship: guardianKinship
-        }
+        } : null
       });
 
       if (selectedClassId) {
@@ -148,7 +151,7 @@ export function Students() {
 
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.guardian && s.guardian.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    (s.guardian && s.guardian.name && s.guardian.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -374,7 +377,7 @@ export function Students() {
       {/* CREATE STUDENT MODAL */}
       {showCreateModal && (
         <div className="modal-backdrop">
-          <div className="modal-content glass-card animate-fade-in student-form-modal">
+          <div className={`modal-content glass-card animate-fade-in student-form-modal ${isAdult ? 'no-guardian' : ''}`}>
             <div className="modal-header">
               <h2>Cadastrar Nova Aluna</h2>
               <button className="modal-close-btn" onClick={() => setShowCreateModal(false)}>
@@ -389,7 +392,7 @@ export function Students() {
               </div>
             )}
 
-            <form onSubmit={handleCreate} className="modal-form student-form-grid">
+            <form onSubmit={handleCreate} className={`modal-form student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
               <div className="student-fields-section">
                 <h3>Dados da Aluna</h3>
                 
@@ -478,71 +481,85 @@ export function Students() {
                     disabled={formLoading}
                     rows="3"
                   />
+                </div>                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '1.2rem', marginBottom: '0.2rem' }}>
+                  <input
+                    id="student-is-adult"
+                    type="checkbox"
+                    checked={isAdult}
+                    onChange={(e) => setIsAdult(e.target.checked)}
+                    disabled={formLoading}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                  />
+                  <label htmlFor="student-is-adult" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-white)', fontWeight: 500 }}>
+                    Aluna maior de idade (+18 anos - dispensa responsável)
+                  </label>
                 </div>
               </div>
-
-              <div className="guardian-fields-section">
-                <h3>Dados do Responsável (Sem CPF)</h3>
-                
-                <div className="form-group">
-                  <label className="form-label" htmlFor="guard-name">Nome Completo *</label>
-                  <input
-                    id="guard-name"
-                    type="text"
-                    className="form-input"
-                    placeholder="Nome do responsável"
-                    value={guardianName}
-                    onChange={(e) => setGuardianName(e.target.value)}
-                    disabled={formLoading}
-                    required
-                  />
-                </div>
-
-                <div className="form-row-2">
+ 
+              {!isAdult && (
+                <div className="guardian-fields-section">
+                  <h3>Dados do Responsável (Sem CPF)</h3>
+                  
                   <div className="form-group">
-                    <label className="form-label" htmlFor="guard-kinship">Parentesco *</label>
-                    <select
-                      id="guard-kinship"
-                      className="form-input form-select"
-                      value={guardianKinship}
-                      onChange={(e) => setGuardianKinship(e.target.value)}
-                      disabled={formLoading}
-                    >
-                      <option value="Mãe">Mãe</option>
-                      <option value="Pai">Pai</option>
-                      <option value="Avó/Avô">Avó/Avô</option>
-                      <option value="Tio/Tia">Tio/Tia</option>
-                      <option value="Outro">Outro</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="guard-phone">Telefone *</label>
+                    <label className="form-label" htmlFor="guard-name">Nome Completo *</label>
                     <input
-                      id="guard-phone"
+                      id="guard-name"
                       type="text"
                       className="form-input"
-                      placeholder="(11) 99999-9999"
-                      value={guardianPhone}
-                      onChange={(e) => setGuardianPhone(e.target.value)}
+                      placeholder="Nome do responsável"
+                      value={guardianName}
+                      onChange={(e) => setGuardianName(e.target.value)}
                       disabled={formLoading}
                       required
                     />
                   </div>
+ 
+                  <div className="form-row-2">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="guard-kinship">Parentesco *</label>
+                      <select
+                        id="guard-kinship"
+                        className="form-input form-select"
+                        value={guardianKinship}
+                        onChange={(e) => setGuardianKinship(e.target.value)}
+                        disabled={formLoading}
+                      >
+                        <option value="Mãe">Mãe</option>
+                        <option value="Pai">Pai</option>
+                        <option value="Avó/Avô">Avó/Avô</option>
+                        <option value="Tio/Tia">Tio/Tia</option>
+                        <option value="Outro">Outro</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="guard-phone">Telefone *</label>
+                      <input
+                        id="guard-phone"
+                        type="text"
+                        className="form-input"
+                        placeholder="(11) 99999-9999"
+                        value={guardianPhone}
+                        onChange={(e) => setGuardianPhone(e.target.value)}
+                        disabled={formLoading}
+                        required
+                      />
+                    </div>
+                  </div>
+ 
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="guard-email">E-mail</label>
+                    <input
+                      id="guard-email"
+                      type="email"
+                      className="form-input"
+                      placeholder="responsavel@email.com"
+                      value={guardianEmail}
+                      onChange={(e) => setGuardianEmail(e.target.value)}
+                      disabled={formLoading}
+                    />
+                  </div>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="guard-email">E-mail</label>
-                  <input
-                    id="guard-email"
-                    type="email"
-                    className="form-input"
-                    placeholder="responsavel@email.com"
-                    value={guardianEmail}
-                    onChange={(e) => setGuardianEmail(e.target.value)}
-                    disabled={formLoading}
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="modal-footer full-width-footer">
                 <button 

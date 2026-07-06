@@ -51,6 +51,11 @@
 /* Form Modal Specifics */
 .student-form-modal {
   max-width: 820px;
+  transition: max-width 0.25s ease-in-out;
+}
+
+.student-form-modal.no-guardian {
+  max-width: 500px;
 }
 
 .student-form-grid {
@@ -58,6 +63,10 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   padding: 1.5rem;
+}
+
+.student-form-grid.no-guardian {
+  grid-template-columns: 1fr;
 }
 
 @media (max-width: 768px) {

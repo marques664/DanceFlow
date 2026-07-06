@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Loader, AlertCircle, X, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader, AlertCircle, X, Check, BookOpen } from 'lucide-react';
 import { api } from '../../services/api';
 import { getCurrentUser } from '../../services/auth';
 import './Modalities.css';

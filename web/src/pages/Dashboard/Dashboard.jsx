@@ -195,19 +195,17 @@ export function Dashboard() {
           </section>
 
           {/* Recent Operations log */}
-          <section className="activity-section glass-card">
+          <section className="activities-section glass-card">
             <h2>Operações Recentes</h2>
-            <div className="activity-timeline">
+            <div className="activities-list">
               {recentActivities.map((act, idx) => (
                 <div key={idx} className="activity-item">
-                  <div className="activity-badge">
-                    <Clock size={14} />
+                  <div className="activity-indicator" />
+                  <div className="activity-body">
+                    <span className="activity-action">{act.action}</span>
+                    <span className="activity-details">{act.details}</span>
                   </div>
-                  <div className="activity-info">
-                    <h4>{act.action}</h4>
-                    <p>{act.details}</p>
-                    <span className="activity-time">{act.time}</span>
-                  </div>
+                  <span className="activity-time">{act.time}</span>
                 </div>
               ))}
             </div>

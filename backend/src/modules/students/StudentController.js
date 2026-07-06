@@ -25,7 +25,7 @@ const createStudentSchema = z.object({
   phone: z.string().trim().min(1, "O telefone é obrigatório."),
   notes: z.string().trim().optional(),
   plan: studentPlanSchema,
-  guardian: guardianSchema,
+  guardian: guardianSchema.optional().nullable(),
 });
 
 const updateStudentSchema = z.object({
@@ -36,7 +36,7 @@ const updateStudentSchema = z.object({
   phone: z.string().trim().min(1, "O telefone é obrigatório.").optional(),
   notes: z.string().trim().optional(),
   plan: studentPlanSchema.optional(),
-  guardian: guardianSchema.optional(),
+  guardian: guardianSchema.optional().nullable(),
 });
 
 class StudentController {
