@@ -5,7 +5,6 @@ const { AppError } = require("../../shared/errors/AppError");
 const createTeacherSchema = z.object({
   name: z.string().trim().min(1, "O nome é obrigatório."),
   email: z.string().trim().email("Formato de e-mail inválido."),
-  password: z.string().min(6, "A senha deve conter no mínimo 6 caracteres."),
 });
 
 const updateTeacherSchema = z.object({
@@ -35,6 +34,7 @@ class TeacherController {
 
     const teacher = await this.teacherService.create(
       req.user.schoolId,
+      req.user.id,
       parsed.data
     );
 

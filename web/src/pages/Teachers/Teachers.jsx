@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Mail, Shield, Edit, Trash2, X, AlertCircle, Loader } from 'lucide-react';
+import { Plus, Search, User, Mail, Shield, Edit, Trash2, X, AlertCircle, Loader, Check, Copy, MessageSquare } from 'lucide-react';
 import { api } from '../../services/api';
 import { getCurrentUser } from '../../services/auth';
 import './Teachers.css';
@@ -16,12 +16,16 @@ export function Teachers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInactivateModal, setShowInactivateModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  const [inviteResult, setInviteResult] = useState(null);
+  const [copied, setCopied] = useState(false);
   
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -47,14 +51,13 @@ export function Teachers() {
     if (!isAdmin) return;
     setName('');
     setEmail('');
-    setPassword('');
     setFormError('');
     setShowCreateModal(true);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!name.trim() || !email.trim()) {
       setFormError('Por favor, preencha todos os campos.');
       return;
     }
@@ -62,12 +65,19 @@ export function Teachers() {
     setFormLoading(true);
     setFormError('');
     try {
-      await api.post('/teachers', {
+      const response = await api.post('/teachers', {
+        name: name.trim(),
+        email: email.trim()
+      });
+      
+      setInviteResult({
         name: name.trim(),
         email: email.trim(),
-        password: password.trim()
+        activationUrl: response.activationUrl
       });
+      
       setShowCreateModal(false);
+      setShowInviteModal(true);
       fetchTeachers();
     } catch (err) {
       setFormError(err.message || 'Erro ao cadastrar professora.');
@@ -299,20 +309,6 @@ export function Teachers() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="teacher-pass">Senha de Acesso *</label>
-                <input
-                  id="teacher-pass"
-                  type="password"
-                  className="form-input"
-                  placeholder="Mínimo 6 caracteres"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={formLoading}
-                  required
-                />
-              </div>
-
               <div className="modal-footer">
                 <button 
                   type="button" 
@@ -331,6 +327,72 @@ export function Teachers() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* TEACHER INVITATION SUCCESS MODAL */}
+      {showInviteModal && inviteResult && (
+        <div className="modal-backdrop">
+          <div className="modal-content glass-card animate-fade-in teacher-modal" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <h2>Convite da Professora</h2>
+              <button className="modal-close-btn" onClick={() => setShowInviteModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1rem 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontWeight: '600' }}>
+                <Check size={18} />
+                <span>Professora cadastrada com sucesso!</span>
+              </div>
+
+              <div className="details-info-block" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <p style={{ margin: '0.25rem 0' }}><strong>Professora:</strong> {inviteResult.name}</p>
+                <p style={{ margin: '0.25rem 0' }}><strong>E-mail:</strong> {inviteResult.email}</p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Link de ativação exclusivo:</span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ fontFamily: 'monospace', fontSize: '0.8rem', flex: 1 }}
+                    value={inviteResult.activationUrl}
+                    readOnly
+                  />
+                  <button
+                    type="button"
+                    className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(inviteResult.activationUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    style={{ minWidth: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {copied ? <Check size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '0.5rem' }}>
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `Olá! A sua conta de professora no DanceFlow foi criada. Para definir sua senha e acessar o sistema, clique no link de convite exclusivo a seguir:\n\n${inviteResult.activationUrl}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-whatsapp"
+                  style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none' }}
+                >
+                  <MessageSquare size={18} />
+                  <span>Enviar por WhatsApp</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}

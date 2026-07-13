@@ -13,6 +13,23 @@ async function runTests() {
       let teacherToken = "";
       let createdTeacherId = "";
 
+      // Pre-cleanup leftover test data
+      const { prisma } = require("./shared/database/prisma");
+      await prisma.activationToken.deleteMany({
+        where: {
+          email: {
+            in: ["teacher.jazz@danceflow.com", "teacher.jazz.updated@danceflow.com"]
+          }
+        }
+      });
+      await prisma.user.deleteMany({
+        where: {
+          email: {
+            in: ["teacher.jazz@danceflow.com", "teacher.jazz.updated@danceflow.com"]
+          }
+        }
+      });
+
       console.log("\n--- TEST 1: Admin Login ---");
       const adminLoginRes = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
@@ -78,6 +95,7 @@ async function runTests() {
       });
       console.log(`Status: ${createAdminRes.status} (Expected: 201)`);
       const createdTeacher = await createAdminRes.json();
+      console.log("Create response body:", createdTeacher);
       createdTeacherId = createdTeacher.id;
       console.log(`Created Teacher: [${createdTeacher.id}] ${createdTeacher.name} (${createdTeacher.email})`);
 
@@ -110,6 +128,7 @@ async function runTests() {
       });
       console.log(`Status: ${updateRes.status} (Expected: 200)`);
       const updatedTeacher = await updateRes.json();
+      console.log("Response Body:", updatedTeacher);
       console.log(`Updated Teacher Name: ${updatedTeacher.name} | Email: ${updatedTeacher.email}`);
 
       console.log("\n--- TEST 8: Inactivate Teacher ---");

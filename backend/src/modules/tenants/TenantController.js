@@ -137,17 +137,35 @@ class TenantController {
     const passwordHash = await hash(password, 8);
 
     const user = await basePrisma.$transaction(async (tx) => {
-      // Create admin user
-      const adminUser = await tx.user.create({
-        data: {
-          name: adminName,
-          email: tokenRecord.email,
-          password: passwordHash,
-          role: "ADMIN",
-          schoolId: tokenRecord.schoolId,
-          isActive: true
-        }
+      // Check if user already exists
+      const existingUser = await tx.user.findUnique({
+        where: { email: tokenRecord.email }
       });
+
+      let activeUser;
+      if (existingUser) {
+        // Activate existing user (e.g. invited teacher)
+        activeUser = await tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: adminName,
+            password: passwordHash,
+            isActive: true
+          }
+        });
+      } else {
+        // Create new school admin user
+        activeUser = await tx.user.create({
+          data: {
+            name: adminName,
+            email: tokenRecord.email,
+            password: passwordHash,
+            role: "ADMIN",
+            schoolId: tokenRecord.schoolId,
+            isActive: true
+          }
+        });
+      }
 
       // Mark token as used
       await tx.activationToken.update({
@@ -155,7 +173,7 @@ class TenantController {
         data: { isUsed: true }
       });
 
-      return adminUser;
+      return activeUser;
     });
 
     // Generate session JWT
