@@ -9,12 +9,14 @@ import { Classes } from './pages/Classes/Classes';
 import { Teachers } from './pages/Teachers/Teachers';
 import { Attendance } from './pages/Attendance/Attendance';
 import { Reports } from './pages/Reports/Reports';
+import { Activate } from './pages/Activate/Activate';
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/ativar" element={<Activate />} />
         
         {/* Protected Routes inside Layout wrapper */}
         <Route path="/" element={<Layout />}>

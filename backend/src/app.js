@@ -8,6 +8,7 @@ const { contextMiddleware } = require("./shared/middlewares/context");
 const { logger } = require("./shared/utils/logger");
 
 const { authRouter } = require("./modules/auth/auth.routes");
+const { tenantRouter } = require("./modules/tenants/tenant.routes");
 const { modalityRouter } = require("./modules/modalities/modality.routes");
 const { studentRouter } = require("./modules/students/student.routes");
 const { classRouter } = require("./modules/classes/class.routes");
@@ -56,6 +57,7 @@ const loginLimiter = rateLimit({
 
 // Routes
 app.use("/auth", loginLimiter, authRouter);
+app.use("/tenants", tenantRouter);
 app.use("/modalities", modalityRouter);
 app.use("/students", studentRouter);
 app.use("/classes", classRouter);

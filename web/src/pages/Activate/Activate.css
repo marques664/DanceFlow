@@ -1,0 +1,141 @@
+.activate-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 10% 20%, rgba(90, 18, 54, 0.4) 0%, rgba(15, 16, 22, 0.9) 90%);
+  padding: 1.5rem;
+}
+
+.activate-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.activate-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.activate-header .app-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.activate-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.activate-header p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.activate-header strong {
+  color: #fff;
+}
+
+.activate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.input-with-icon {
+  position: relative;
+  width: 100%;
+}
+
+.input-with-icon .input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.input-with-icon .form-input {
+  padding-left: 2.75rem;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+}
+
+/* Loading, Error and Success States Card specific styles */
+.loading-card, .error-card, .success-card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  gap: 1.25rem;
+}
+
+.loading-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+}
+
+.error-card h2 {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.error-card p.error-message-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.error-actions {
+  margin-top: 1rem;
+}
+
+.success-card h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.success-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.alert-circle-icon {
+  background: rgba(239, 68, 68, 0.1);
+  padding: 1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  display: inline-flex;
+}
+
+.success-circle-icon {
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  display: inline-flex;
+}
