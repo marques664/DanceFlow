@@ -9,7 +9,8 @@ import {
   LogOut,
   Sparkles,
   GraduationCap,
-  FileText
+  FileText,
+  Compass
 } from 'lucide-react';
 import { logout, getCurrentUser } from '../services/auth';
 import './Sidebar.css';

@@ -7,7 +7,8 @@ import {
   ArrowUpRight,
   TrendingDown,
   Clock,
-  Loader
+  Loader,
+  AlertCircle
 } from 'lucide-react';
 import { api } from '../../services/api';
 import './Dashboard.css';
