@@ -61,7 +61,14 @@ class TenantController {
       return { school, tokenRecord: activationToken };
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    if (result.school.slug) {
+      if (frontendUrl.includes('localhost')) {
+        frontendUrl = frontendUrl.replace('localhost', `${result.school.slug}.localhost`);
+      } else {
+        frontendUrl = frontendUrl.replace('://', `://${result.school.slug}.`);
+      }
+    }
     const activationUrl = `${frontendUrl}/ativar?token=${result.tokenRecord.token}`;
 
     // 3. Send email convite

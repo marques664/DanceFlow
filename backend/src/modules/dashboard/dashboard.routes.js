@@ -97,4 +97,28 @@ dashboardRouter.get("/stats", ensureAuthenticated, async (req, res, next) => {
   }
 });
 
+dashboardRouter.get("/audit-logs", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const schoolId = req.user.schoolId;
+
+    const logs = await prisma.auditLog.findMany({
+      where: { schoolId },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5
+    });
+
+    return res.status(200).json(logs);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = { dashboardRouter };

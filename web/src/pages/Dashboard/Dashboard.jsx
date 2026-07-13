@@ -15,24 +15,60 @@ import './Dashboard.css';
 
 export function Dashboard() {
   const [stats, setStats] = useState(null);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchDashboardData = async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get('/dashboard/stats');
-      setStats(data);
+      const [statsData, logsData] = await Promise.all([
+        api.get('/dashboard/stats'),
+        api.get('/dashboard/audit-logs')
+      ]);
+      setStats(statsData);
+      setActivities(logsData || []);
     } catch (err) {
-      setError(err.message || 'Falha ao carregar as métricas do painel.');
+      setError(err.message || 'Falha ao carregar os dados do painel.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getActionLabel = (action) => {
+    switch (action) {
+      case 'CREATE_STUDENT': return 'Nova aluna cadastrada';
+      case 'UPDATE_STUDENT': return 'Cadastro de aluna atualizado';
+      case 'INACTIVATE_STUDENT': return 'Aluna inativada';
+      case 'CREATE_CLASS': return 'Nova turma criada';
+      case 'UPDATE_CLASS': return 'Turma atualizada';
+      case 'CREATE_TEACHER': return 'Professora cadastrada';
+      case 'UPDATE_TEACHER': return 'Cadastro de professora atualizado';
+      case 'CREATE_ATTENDANCE': return 'Frequência registrada';
+      case 'UPDATE_ATTENDANCE': return 'Frequência atualizada';
+      default: return action;
+    }
+  };
+
+  const getActionDetails = (act) => {
+    const userName = act.user ? act.user.name : 'Operador';
+    switch (act.action) {
+      case 'CREATE_STUDENT': return `Lançado por: ${userName}`;
+      case 'UPDATE_STUDENT': return `Alterado por: ${userName}`;
+      case 'CREATE_ATTENDANCE': return `Chamada feita por: ${userName}`;
+      case 'UPDATE_ATTENDANCE': return `Frequência atualizada por: ${userName}`;
+      default: return `Executado por: ${userName}`;
+    }
+  };
+
+  const formatTime = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('pt-BR');
   };
 
   if (loading) {
@@ -49,7 +85,7 @@ export function Dashboard() {
       <div className="alert alert-error">
         <AlertCircle size={18} />
         <span>{error}</span>
-        <button className="btn-close-alert" onClick={fetchStats}>Recarregar</button>
+        <button className="btn-close-alert" onClick={fetchDashboardData}>Recarregar</button>
       </div>
     );
   }
@@ -59,13 +95,6 @@ export function Dashboard() {
     { label: 'Turmas Ativas', value: stats.activeClasses, change: 'Estável', positive: true, icon: <Calendar size={24} /> },
     { label: 'Média de Frequência', value: `${stats.averageAttendance}%`, change: 'Consolidado', positive: true, icon: <TrendingUp size={24} /> },
     { label: 'Faltas Críticas (Risco)', value: `${stats.lowAttendanceWarnings.length} alunas`, change: 'Alerta', positive: false, icon: <AlertTriangle size={24} /> },
-  ];
-
-  // Activities mocked as they are informational
-  const recentActivities = [
-    { action: 'Frequência registrada', details: 'Professora Ballet registrou chamada concluída no banco de dados', time: 'Há alguns minutos' },
-    { action: 'Nova aluna cadastrada', details: 'A aluna foi inserida com sucesso no banco PostgreSQL', time: 'Há 1 hora' },
-    { action: 'Aula agendada', details: 'O sistema gerou as aulas para os próximos 30 dias', time: 'Há 2 horas' },
   ];
 
   return (
@@ -199,16 +228,20 @@ export function Dashboard() {
           <section className="activities-section glass-card">
             <h2>Operações Recentes</h2>
             <div className="activities-list">
-              {recentActivities.map((act, idx) => (
-                <div key={idx} className="activity-item">
-                  <div className="activity-indicator" />
-                  <div className="activity-body">
-                    <span className="activity-action">{act.action}</span>
-                    <span className="activity-details">{act.details}</span>
+              {activities.length === 0 ? (
+                <p className="no-alerts-text" style={{ padding: '1rem 0' }}>Nenhuma operação registrada ainda.</p>
+              ) : (
+                activities.map((act) => (
+                  <div key={act.id} className="activity-item">
+                    <div className="activity-indicator" />
+                    <div className="activity-body">
+                      <span className="activity-action">{getActionLabel(act.action)}</span>
+                      <span className="activity-details">{getActionDetails(act)}</span>
+                    </div>
+                    <span className="activity-time">{formatTime(act.createdAt)}</span>
                   </div>
-                  <span className="activity-time">{act.time}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         </div>

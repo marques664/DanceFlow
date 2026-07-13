@@ -8,6 +8,8 @@ class EmailService {
 EMAIL SENT TO: ${email}
 SUBJECT: Convite para ativação da conta: ${schoolName}
 BODY:
+🎉
+
 Olá! Sua escola "${schoolName}" foi cadastrada com sucesso no DanceFlow.
 Para definir sua senha de acesso e ativar sua conta administradora,
 clique no link a seguir:
