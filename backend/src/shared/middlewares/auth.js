@@ -22,6 +22,13 @@ function ensureAuthenticated(req, res, next) {
       schoolId,
     };
 
+    const { contextStorage } = require("../utils/context");
+    const store = contextStorage.getStore();
+    if (store) {
+      store.schoolId = schoolId;
+      store.userId = sub;
+    }
+
     return next();
   } catch (err) {
     throw new AppError("Invalid JWT token", 401);
