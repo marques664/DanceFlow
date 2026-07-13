@@ -219,3 +219,40 @@
   color: var(--text-secondary);
   white-space: pre-wrap;
 }
+
+/* Student schedule selection list styles */
+.student-schedule-selection-group {
+  margin-top: 1rem;
+}
+
+.student-schedules-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  background: rgba(15, 16, 22, 0.4);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.student-schedule-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.student-schedule-checkbox-label:hover {
+  color: #fff;
+}
+
+.student-schedule-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}

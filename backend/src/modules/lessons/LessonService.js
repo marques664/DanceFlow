@@ -92,7 +92,8 @@ class LessonService {
                       include: { guardian: true }
                     }
                   }
-                }
+                },
+                schedules: true
               }
             }
           },
@@ -106,18 +107,25 @@ class LessonService {
       throw new AppError("Lesson not found.", 404);
     }
 
-    // Get list of all enrolled students in the class
-    const eligibleStudents = lesson.class.students.map((cs) => {
-      const att = lesson.attendances.find((a) => a.studentId === cs.student.id);
-      return {
-        id: cs.student.id,
-        name: cs.student.name,
-        plan: cs.student.plan,
-        isActive: cs.student.isActive,
-        attendanceStatus: att ? att.status : null, // "PRESENT" | "ABSENT" | null
-        attendanceIsDraft: att ? att.isDraft : false,
-      };
-    });
+    // Get list of all enrolled students in the class, filtered by schedule if REGULAR
+    const eligibleStudents = lesson.class.students
+      .filter((cs) => {
+        if (lesson.type === "REGULAR" && lesson.scheduleId) {
+          return cs.schedules.some((s) => s.id === lesson.scheduleId);
+        }
+        return true;
+      })
+      .map((cs) => {
+        const att = lesson.attendances.find((a) => a.studentId === cs.student.id);
+        return {
+          id: cs.student.id,
+          name: cs.student.name,
+          plan: cs.student.plan,
+          isActive: cs.student.isActive,
+          attendanceStatus: att ? att.status : null, // "PRESENT" | "ABSENT" | null
+          attendanceIsDraft: att ? att.isDraft : false,
+        };
+      });
 
     return {
       id: lesson.id,

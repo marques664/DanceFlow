@@ -24,6 +24,7 @@ const createClassSchema = z.object({
 
 const enrollStudentSchema = z.object({
   studentId: z.string().uuid("ID da aluna inválido."),
+  scheduleIds: z.array(z.string().uuid("ID de horário inválido.")).optional(),
 });
 
 class ClassController {
@@ -92,7 +93,8 @@ class ClassController {
     const enrollment = await this.classService.enrollStudent(
       req.user.schoolId,
       id,
-      parsedData.data.studentId
+      parsedData.data.studentId,
+      parsedData.data.scheduleIds
     );
 
     return res.status(201).json(enrollment);

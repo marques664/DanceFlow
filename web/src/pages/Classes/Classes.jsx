@@ -28,9 +28,22 @@ export function Classes() {
   const [selectedModalityId, setSelectedModalityId] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [secTeacher, setSecTeacher] = useState('');
-  const [selectedDays, setSelectedDays] = useState([]);
-  const [timeStart, setTimeStart] = useState('');
-  const [timeEnd, setTimeEnd] = useState('');
+  const [schedules, setSchedules] = useState([{ dayOfWeek: 'Segunda', timeStart: '', timeEnd: '' }]);
+
+  const handleAddSchedule = () => {
+    setSchedules([...schedules, { dayOfWeek: 'Segunda', timeStart: '', timeEnd: '' }]);
+  };
+
+  const handleRemoveSchedule = (index) => {
+    if (schedules.length === 1) return;
+    setSchedules(schedules.filter((_, i) => i !== index));
+  };
+
+  const handleScheduleChange = (index, field, value) => {
+    const newSchedules = [...schedules];
+    newSchedules[index][field] = value;
+    setSchedules(newSchedules);
+  };
 
   const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -74,9 +87,7 @@ export function Classes() {
     if (modalities.length > 0) setSelectedModalityId(modalities[0].id);
     if (teachers.length > 0) setSelectedTeacherId(teachers[0].id);
     setSecTeacher('');
-    setSelectedDays([]);
-    setTimeStart('');
-    setTimeEnd('');
+    setSchedules([{ dayOfWeek: 'Segunda', timeStart: '', timeEnd: '' }]);
     setFormError('');
     setShowCreateModal(true);
   };
@@ -91,17 +102,11 @@ export function Classes() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!className.trim() || !selectedModalityId || !selectedTeacherId || selectedDays.length === 0 || !timeStart || !timeEnd) {
+    const invalidSchedule = schedules.some(s => !s.dayOfWeek || !s.timeStart || !s.timeEnd);
+    if (!className.trim() || !selectedModalityId || !selectedTeacherId || invalidSchedule) {
       setFormError('Por favor, preencha todos os campos obrigatórios (*).');
       return;
     }
-
-    // Build schedule objects
-    const schedules = selectedDays.map(day => ({
-      dayOfWeek: day,
-      timeStart,
-      timeEnd
-    }));
 
     setFormLoading(true);
     setFormError('');
@@ -332,49 +337,69 @@ export function Classes() {
                 />
               </div>
 
-              {/* Schedule definition */}
-              <div className="form-group">
-                <label className="form-label">Dias da Semana *</label>
-                <div className="days-checkbox-grid">
-                  {weekDays.map(day => (
-                    <button
-                      key={day}
-                      type="button"
-                      className={`day-checkbox-btn ${selectedDays.includes(day) ? 'checked' : ''}`}
-                      onClick={() => handleToggleDay(day)}
-                      disabled={formLoading}
-                    >
-                      {day.substring(0, 3)}
-                    </button>
-                  ))}
+              {/* Schedules definition */}
+              <div className="form-group schedules-form-section">
+                <div className="schedules-section-header">
+                  <label className="form-label">Horários / Encontros Semanais *</label>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleAddSchedule}
+                    disabled={formLoading}
+                  >
+                    + Adicionar Horário
+                  </button>
                 </div>
-              </div>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="class-time-start">Horário de Início *</label>
-                  <input
-                    id="class-time-start"
-                    type="time"
-                    className="form-input"
-                    value={timeStart}
-                    onChange={(e) => setTimeStart(e.target.value)}
-                    disabled={formLoading}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="class-time-end">Horário de Término *</label>
-                  <input
-                    id="class-time-end"
-                    type="time"
-                    className="form-input"
-                    value={timeEnd}
-                    onChange={(e) => setTimeEnd(e.target.value)}
-                    disabled={formLoading}
-                    required
-                  />
-                </div>
+                {schedules.map((sch, index) => (
+                  <div key={index} className="schedule-form-row">
+                    <div className="schedule-field day-field">
+                      <select
+                        className="form-input form-select"
+                        value={sch.dayOfWeek}
+                        onChange={(e) => handleScheduleChange(index, 'dayOfWeek', e.target.value)}
+                        disabled={formLoading}
+                        required
+                      >
+                        {weekDays.map(day => (
+                          <option key={day} value={day}>{day}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="schedule-field time-field">
+                      <input
+                        type="time"
+                        className="form-input"
+                        value={sch.timeStart}
+                        onChange={(e) => handleScheduleChange(index, 'timeStart', e.target.value)}
+                        disabled={formLoading}
+                        required
+                      />
+                    </div>
+                    <span className="time-separator">às</span>
+                    <div className="schedule-field time-field">
+                      <input
+                        type="time"
+                        className="form-input"
+                        value={sch.timeEnd}
+                        onChange={(e) => handleScheduleChange(index, 'timeEnd', e.target.value)}
+                        disabled={formLoading}
+                        required
+                      />
+                    </div>
+                    {schedules.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn-danger-link"
+                        onClick={() => handleRemoveSchedule(index)}
+                        disabled={formLoading}
+                        title="Remover este horário"
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="modal-footer">

@@ -35,6 +35,21 @@ export function Students() {
 
   const [classesList, setClassesList] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedScheduleIds, setSelectedScheduleIds] = useState([]);
+
+  const handleClassChange = (classId) => {
+    setSelectedClassId(classId);
+    if (!classId) {
+      setSelectedScheduleIds([]);
+      return;
+    }
+    const targetClass = classesList.find(c => c.id === classId);
+    if (targetClass && targetClass.schedules) {
+      setSelectedScheduleIds(targetClass.schedules.map(s => s.id));
+    } else {
+      setSelectedScheduleIds([]);
+    }
+  };
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -78,7 +93,16 @@ export function Students() {
     setGuardianEmail('');
     setGuardianKinship('Mãe');
     setIsAdult(false);
-    setSelectedClassId(classesList[0]?.id || '');
+    
+    const defaultClassId = classesList[0]?.id || '';
+    setSelectedClassId(defaultClassId);
+    if (defaultClassId) {
+      const targetClass = classesList.find(c => c.id === defaultClassId);
+      setSelectedScheduleIds(targetClass?.schedules?.map(s => s.id) || []);
+    } else {
+      setSelectedScheduleIds([]);
+    }
+
     setFormError('');
     setShowCreateModal(true);
   };
@@ -110,7 +134,8 @@ export function Students() {
 
       if (selectedClassId) {
         await api.post(`/classes/${selectedClassId}/students`, {
-          studentId: newStudent.id
+          studentId: newStudent.id,
+          scheduleIds: selectedScheduleIds
         });
       }
 
@@ -459,7 +484,7 @@ export function Students() {
                       id="student-class"
                       className="form-input form-select"
                       value={selectedClassId}
-                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      onChange={(e) => handleClassChange(e.target.value)}
                       disabled={formLoading}
                     >
                       <option value="">Nenhuma turma</option>
@@ -469,6 +494,39 @@ export function Students() {
                     </select>
                   </div>
                 </div>
+
+                {selectedClassId && (
+                  (() => {
+                    const targetClass = classesList.find(c => c.id === selectedClassId);
+                    if (targetClass && targetClass.schedules && targetClass.schedules.length > 0) {
+                      return (
+                        <div className="form-group student-schedule-selection-group animate-fade-in">
+                          <label className="form-label">Selecionar Horários de Aula *</label>
+                          <div className="student-schedules-checkbox-list">
+                            {targetClass.schedules.map(s => (
+                              <label key={s.id} className="student-schedule-checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedScheduleIds.includes(s.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedScheduleIds([...selectedScheduleIds, s.id]);
+                                    } else {
+                                      setSelectedScheduleIds(selectedScheduleIds.filter(id => id !== s.id));
+                                    }
+                                  }}
+                                  disabled={formLoading}
+                                />
+                                <span>{s.dayOfWeek} das {s.timeStart} às {s.timeEnd}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
 
                 <div className="form-group">
                   <label className="form-label" htmlFor="student-notes">Observações</label>

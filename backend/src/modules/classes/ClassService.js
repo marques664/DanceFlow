@@ -31,7 +31,8 @@ class ClassService {
           timeStart: sch.timeStart,
           timeEnd: sch.timeEnd,
           type: "REGULAR",
-          status: "SCHEDULED"
+          status: "SCHEDULED",
+          scheduleId: sch.id
         });
       }
     }
@@ -99,7 +100,7 @@ class ClassService {
       }
 
       // 6. Generate lessons
-      const lessonsData = this.generateLessonsForClass(dbClass.id, schedules);
+      const lessonsData = this.generateLessonsForClass(dbClass.id, createdSchedules);
       if (lessonsData.length > 0) {
         await tx.lesson.createMany({
           data: lessonsData
@@ -151,13 +152,21 @@ class ClassService {
     });
 
     return classes.map(c => {
-      // Format schedule text (e.g. "Segunda e Quarta, 14:00 - 15:00")
+      // Format schedule text (e.g. "Segunda e Quarta, 14:00 - 15:00" or "Segunda, 09:00 - 10:00 | Quarta, 17:00 - 18:00")
       let scheduleText = "Sem horário definido";
       if (c.schedules.length > 0) {
-        const days = c.schedules.map(s => s.dayOfWeek);
-        const uniqueDays = [...new Set(days)];
-        const firstSch = c.schedules[0];
-        scheduleText = `${uniqueDays.join(' e ')}, ${firstSch.timeStart} - ${firstSch.timeEnd}`;
+        const groups = {};
+        for (const s of c.schedules) {
+          const timeSlot = `${s.timeStart} - ${s.timeEnd}`;
+          if (!groups[timeSlot]) {
+            groups[timeSlot] = [];
+          }
+          groups[timeSlot].push(s.dayOfWeek);
+        }
+        const parts = Object.entries(groups).map(([timeSlot, days]) => {
+          return `${days.join(' e ')}, ${timeSlot}`;
+        });
+        scheduleText = parts.join(' | ');
       }
 
       return {
@@ -168,7 +177,8 @@ class ClassService {
         mainTeacher: c.mainTeacher.name,
         secondaryTeachers: c.teachers.map(t => t.teacher.name),
         studentCount: c.students.length,
-        status: c.isActive ? "Ativa" : "Inativa"
+        status: c.isActive ? "Ativa" : "Inativa",
+        schedules: c.schedules
       };
     });
   }
@@ -184,7 +194,10 @@ class ClassService {
           include: { teacher: true }
         },
         students: {
-          include: { student: true }
+          include: {
+            student: true,
+            schedules: true
+          }
         }
       }
     });
@@ -226,7 +239,7 @@ class ClassService {
     });
   }
 
-  async enrollStudent(schoolId, classId, studentId) {
+  async enrollStudent(schoolId, classId, studentId, scheduleIds = []) {
     const c = await prisma.class.findFirst({
       where: { id: classId, schoolId, isActive: true }
     });
@@ -241,6 +254,25 @@ class ClassService {
       throw new AppError("Student not found.", 404);
     }
 
+    let targetScheduleIds = scheduleIds;
+    if (!targetScheduleIds || targetScheduleIds.length === 0) {
+      const allSchedules = await prisma.classSchedule.findMany({
+        where: { classId }
+      });
+      targetScheduleIds = allSchedules.map(s => s.id);
+    } else {
+      // Validate that all scheduleIds belong to this class
+      const schedulesCount = await prisma.classSchedule.count({
+        where: {
+          id: { in: targetScheduleIds },
+          classId
+        }
+      });
+      if (schedulesCount !== targetScheduleIds.length) {
+        throw new AppError("One or more schedule IDs do not belong to this class.", 400);
+      }
+    }
+
     // Check if already enrolled
     const enrollment = await prisma.classStudent.findUnique({
       where: {
@@ -249,14 +281,32 @@ class ClassService {
     });
 
     if (enrollment) {
-      return enrollment; // Already enrolled, return connection
+      return prisma.classStudent.update({
+        where: {
+          classId_studentId: { classId, studentId }
+        },
+        data: {
+          schedules: {
+            set: targetScheduleIds.map(id => ({ id }))
+          }
+        },
+        include: {
+          schedules: true
+        }
+      });
     }
 
     // Create enrollment link
     return prisma.classStudent.create({
       data: {
         classId,
-        studentId
+        studentId,
+        schedules: {
+          connect: targetScheduleIds.map(id => ({ id }))
+        }
+      },
+      include: {
+        schedules: true
       }
     });
   }
@@ -272,7 +322,8 @@ class ClassService {
     const enrollments = await prisma.classStudent.findMany({
       where: { classId },
       include: {
-        student: true
+        student: true,
+        schedules: true
       }
     });
 
@@ -280,7 +331,13 @@ class ClassService {
       id: e.student.id,
       name: e.student.name,
       plan: e.student.plan,
-      isActive: e.student.isActive
+      isActive: e.student.isActive,
+      schedules: e.schedules.map(s => ({
+        id: s.id,
+        dayOfWeek: s.dayOfWeek,
+        timeStart: s.timeStart,
+        timeEnd: s.timeEnd
+      }))
     }));
   }
 }

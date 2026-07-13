@@ -24,12 +24,20 @@ dashboardRouter.get("/stats", ensureAuthenticated, async (req, res, next) => {
       }
     });
 
-    // 2. Compute attendance rate warnings for each student
+        // 2. Compute attendance rate warnings for each student
     const activeStudents = await prisma.student.findMany({
       where: { schoolId, isActive: true },
       include: {
         attendances: {
-          where: { isDraft: false }
+          where: { isDraft: false },
+          include: {
+            lesson: true
+          }
+        },
+        classes: {
+          include: {
+            schedules: true
+          }
         }
       }
     });
@@ -39,7 +47,16 @@ dashboardRouter.get("/stats", ensureAuthenticated, async (req, res, next) => {
     let totalRecords = 0;
 
     for (const student of activeStudents) {
-      const records = student.attendances;
+      // Filter records: only keep REGULAR lessons if student is registered in that schedule
+      const records = student.attendances.filter((att) => {
+        if (att.lesson.type === "REGULAR" && att.lesson.scheduleId) {
+          const studentClass = student.classes.find((c) => c.classId === att.lesson.classId);
+          if (!studentClass) return false;
+          return studentClass.schedules.some((s) => s.id === att.lesson.scheduleId);
+        }
+        return true;
+      });
+
       if (records.length === 0) continue;
 
       const presents = records.filter(r => r.status === "PRESENT").length;

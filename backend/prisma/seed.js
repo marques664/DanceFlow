@@ -31,7 +31,8 @@ function generateInitialLessonsForClass(classId, schedules, startDate, daysCount
         timeStart: sch.timeStart,
         timeEnd: sch.timeEnd,
         type: "REGULAR",
-        status: "SCHEDULED"
+        status: "SCHEDULED",
+        scheduleId: sch.id
       });
     }
   }
@@ -277,8 +278,9 @@ async function main() {
       console.log(`Class created: ${dbClass.name}`);
 
       // Create schedules
+      const createdSchedules = [];
       for (const sch of c.schedules) {
-        await prisma.classSchedule.create({
+        const dbSchedule = await prisma.classSchedule.create({
           data: {
             classId: dbClass.id,
             dayOfWeek: sch.dayOfWeek,
@@ -286,6 +288,7 @@ async function main() {
             timeEnd: sch.timeEnd
           }
         });
+        createdSchedules.push(dbSchedule);
       }
       console.log(`Schedules created for ${dbClass.name}`);
 
@@ -296,7 +299,10 @@ async function main() {
           await prisma.classStudent.create({
             data: {
               classId: dbClass.id,
-              studentId: student.id
+              studentId: student.id,
+              schedules: {
+                connect: createdSchedules.map(s => ({ id: s.id }))
+              }
             }
           });
           console.log(`Enrolled ${student.name} in ${dbClass.name}`);
@@ -304,7 +310,7 @@ async function main() {
       }
 
       // Generate lessons
-      const lessons = generateInitialLessonsForClass(dbClass.id, c.schedules, new Date("2026-07-01"));
+      const lessons = generateInitialLessonsForClass(dbClass.id, createdSchedules, new Date("2026-07-01"));
       for (const l of lessons) {
         await prisma.lesson.create({
           data: l
