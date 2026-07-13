@@ -1,12 +1,26 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 
+function getTenantSlug() {
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  if (parts.length > 1 && !['localhost', '127', 'www', 'app'].includes(parts[0]) && !/^\d+$/.test(parts[0])) {
+    return parts[0];
+  }
+  return null;
+}
+
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('@DanceFlow:token');
+  const tenantSlug = getTenantSlug();
   
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  if (tenantSlug) {
+    headers['x-tenant-slug'] = tenantSlug;
+  }
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;

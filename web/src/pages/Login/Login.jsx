@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { login, isAuthenticated } from '../../services/auth';
+import { api } from '../../services/api';
 import './Login.css';
 
 export function Login() {
@@ -11,10 +12,26 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [schoolName, setSchoolName] = useState('');
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/');
+      navigate('/inicio');
+    }
+
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    if (parts.length > 1 && !['localhost', '127', 'www', 'app'].includes(parts[0]) && !/^\d+$/.test(parts[0])) {
+      const slug = parts[0];
+      api.get(`/tenants/info?slug=${slug}`)
+        .then(res => {
+          if (res && res.data) {
+            setSchoolName(res.data.name);
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao carregar marca da escola:', err);
+        });
     }
   }, [navigate]);
 
@@ -31,7 +48,7 @@ export function Login() {
 
     try {
       await login({ email, password });
-      navigate('/');
+      navigate('/inicio');
     } catch (err) {
       setError(err.message || 'Erro ao realizar login. Tente novamente.');
     } finally {
@@ -49,7 +66,7 @@ export function Login() {
             <Sparkles size={32} className="logo-icon" />
           </div>
           <h1>Dance<span>Flow</span></h1>
-          <p>Gestão Inteligente para Escolas de Dança</p>
+          <p>{schoolName ? `Escola: ${schoolName}` : 'Gestão Inteligente para Escolas de Dança'}</p>
         </div>
 
         {error && (

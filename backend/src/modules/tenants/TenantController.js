@@ -178,6 +178,29 @@ class TenantController {
       }
     });
   }
+
+  async getTenantInfo(req, res) {
+    const { slug } = req.query;
+
+    if (!slug) {
+      throw new AppError("Tenant slug is missing.", 400);
+    }
+
+    const school = await basePrisma.school.findFirst({
+      where: { slug, isActive: true }
+    });
+
+    if (!school) {
+      throw new AppError("School not found.", 404);
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        name: school.name
+      }
+    });
+  }
 }
 
 module.exports = { TenantController };

@@ -20,20 +20,20 @@ export function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/entrar');
   };
 
   const navItems = [
-    { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/modalities', icon: <BookOpen size={20} />, label: 'Modalidades' },
-    { to: '/students', icon: <Users size={20} />, label: 'Alunas' },
-    { to: '/classes', icon: <Calendar size={20} />, label: 'Turmas' },
-    { to: '/teachers', icon: <GraduationCap size={20} />, label: 'Professoras' },
-    { to: '/attendance', icon: <CheckSquare size={20} />, label: 'Frequência' },
+    { to: '/inicio', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { to: '/modalidades', icon: <BookOpen size={20} />, label: 'Modalidades' },
+    { to: '/alunas', icon: <Users size={20} />, label: 'Alunas' },
+    { to: '/turmas', icon: <Calendar size={20} />, label: 'Turmas' },
+    { to: '/professoras', icon: <GraduationCap size={20} />, label: 'Professoras' },
+    { to: '/presenca', icon: <CheckSquare size={20} />, label: 'Frequência' },
   ];
 
   if (user && user.role === 'ADMIN') {
-    navItems.push({ to: '/reports', icon: <FileText size={20} />, label: 'Relatórios' });
+    navItems.push({ to: '/relatorios', icon: <FileText size={20} />, label: 'Relatórios' });
   }
 
   return (

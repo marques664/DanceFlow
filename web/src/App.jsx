@@ -15,22 +15,24 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/entrar" element={<Login />} />
+        <Route path="/login" element={<Navigate to="/entrar" replace />} />
         <Route path="/ativar" element={<Activate />} />
         
         {/* Protected Routes inside Layout wrapper */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="modalities" element={<Modalities />} />
-          <Route path="students" element={<Students />} />
-          <Route path="classes" element={<Classes />} />
-          <Route path="teachers" element={<Teachers />} />
-          <Route path="attendance" element={<Attendance />} />
-          <Route path="reports" element={<Reports />} />
+          <Route index element={<Navigate to="/inicio" replace />} />
+          <Route path="inicio" element={<Dashboard />} />
+          <Route path="modalidades" element={<Modalities />} />
+          <Route path="alunas" element={<Students />} />
+          <Route path="turmas" element={<Classes />} />
+          <Route path="professoras" element={<Teachers />} />
+          <Route path="presenca" element={<Attendance />} />
+          <Route path="relatorios" element={<Reports />} />
         </Route>
 
         {/* Fallback redirect to Dashboard */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/inicio" replace />} />
       </Routes>
     </BrowserRouter>
   );
