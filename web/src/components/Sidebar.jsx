@@ -36,6 +36,10 @@ export function Sidebar() {
     navItems.push({ to: '/relatorios', icon: <FileText size={20} />, label: 'Relatórios' });
   }
 
+  if (user && user.email === 'admin@danceflow.com') {
+    navItems.push({ to: '/admin/convites', icon: <Compass size={20} />, label: 'Painel SaaS' });
+  }
+
   return (
     <aside className="sidebar glass-card">
       <div className="sidebar-brand">

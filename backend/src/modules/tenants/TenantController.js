@@ -73,7 +73,8 @@ class TenantController {
       data: {
         schoolId: result.school.id,
         slug: result.school.slug,
-        token: result.tokenRecord.token
+        token: result.tokenRecord.token,
+        activationUrl
       }
     });
   }
