@@ -74,6 +74,23 @@ class StudentService {
         };
       }
 
+      // Register Audit Log
+      const { contextStorage } = require("../../shared/utils/context");
+      const store = contextStorage.getStore() || {};
+      if (store.userId) {
+        await tx.auditLog.create({
+          data: {
+            schoolId,
+            userId: store.userId,
+            action: "CREATE_STUDENT",
+            details: JSON.stringify({
+              studentId: student.id,
+              name: student.name
+            })
+          }
+        });
+      }
+
       return {
         ...student,
         age: this.calculateAge(student.birthDate),
@@ -189,22 +206,29 @@ class StudentService {
         },
       });
 
+      if (!student) {
+        throw new AppError("Student not found.", 404);
+      }
+
+      // Check if conversion (Rule 3.8 / feat02)
+      const wasExperimental = student.name.endsWith(" (Experimental)");
+      const isNowRegular = name && !name.endsWith(" (Experimental)");
+      const isConversion = wasExperimental && isNowRegular;
+      const action = isConversion ? "CONVERT_EXPERIMENTAL_STUDENT" : "UPDATE_STUDENT";
+
       // Register Audit Log (Rule 3.7)
       await tx.auditLog.create({
         data: {
           schoolId,
           userId,
-          action: "UPDATE_STUDENT",
+          action,
           details: JSON.stringify({
             studentId: id,
+            name: name || student.name,
             updatedFields: Object.keys({ name, birthDate, phone, notes, plan, guardian }).filter(k => ({ name, birthDate, phone, notes, plan, guardian }[k] !== undefined))
           })
         }
       });
-
-      if (!student) {
-        throw new AppError("Student not found.", 404);
-      }
 
       // 2. Update student fields
       const updatedStudent = await tx.student.update({

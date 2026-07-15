@@ -47,6 +47,11 @@ class TeacherService {
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
+      // Delete any existing activation tokens for this email to avoid unique constraint violations on re-invites
+      await tx.activationToken.deleteMany({
+        where: { email }
+      });
+
       const tokenRecord = await tx.activationToken.create({
         data: {
           email,
@@ -77,7 +82,8 @@ class TeacherService {
     let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     if (school.slug) {
       if (frontendUrl.includes('localhost')) {
-        frontendUrl = frontendUrl.replace('localhost', `${school.slug}.localhost`);
+        // Use lvh.me for local subdomain resolution (points to 127.0.0.1 on Windows automatically)
+        frontendUrl = frontendUrl.replace('localhost', `${school.slug}.lvh.me`);
       } else {
         frontendUrl = frontendUrl.replace('://', `://${school.slug}.`);
       }

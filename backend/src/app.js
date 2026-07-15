@@ -16,6 +16,7 @@ const { userRouter } = require("./modules/users/user.routes");
 const { teacherRouter } = require("./modules/teachers/teacher.routes");
 const { lessonRouter } = require("./modules/lessons/lesson.routes");
 const { dashboardRouter } = require("./modules/dashboard/dashboard.routes");
+const { auditRouter } = require("./modules/audit/audit.routes");
 
 const app = express();
 
@@ -25,7 +26,7 @@ app.use(helmet());
 // CORS config (supporting tenant subdomains in production, localhost in development)
 const allowedOrigins = process.env.NODE_ENV === 'production' 
   ? [/\.danceflow\.com$/] 
-  : [/^http:\/\/localhost:/, /^http:\/\/127\.0\.0\.1:/];
+  : [/^http:\/\/localhost:/, /^http:\/\/127\.0\.0\.1:/, /^http:\/\/(.*\.)?lvh\.me:/];
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
@@ -39,7 +40,7 @@ app.use(contextMiddleware);
 // Global Rate Limiting
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 200, // Limit each IP to 100 requests per windowMs
   message: { status: "error", message: "Too many requests from this IP, please try again after 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false
@@ -65,6 +66,7 @@ app.use("/users", userRouter);
 app.use("/teachers", teacherRouter);
 app.use("/lessons", lessonRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/audit-logs", auditRouter);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

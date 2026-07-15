@@ -10,7 +10,8 @@ import {
   Sparkles,
   GraduationCap,
   FileText,
-  Compass
+  Compass,
+  ShieldAlert
 } from 'lucide-react';
 import { logout, getCurrentUser } from '../services/auth';
 import './Sidebar.css';
@@ -35,6 +36,7 @@ export function Sidebar() {
 
   if (user && user.role === 'ADMIN') {
     navItems.push({ to: '/relatorios', icon: <FileText size={20} />, label: 'Relatórios' });
+    navItems.push({ to: '/auditoria', icon: <ShieldAlert size={20} />, label: 'Auditoria' });
   }
 
   if (user && user.email === 'admin@danceflow.com') {

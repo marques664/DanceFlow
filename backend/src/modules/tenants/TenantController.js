@@ -39,6 +39,11 @@ class TenantController {
         throw new AppError("An administrator with this email is already registered.", 400);
       }
 
+      // Delete any existing activation tokens for this email to avoid unique constraint violations on re-invites
+      await tx.activationToken.deleteMany({
+        where: { email: adminEmail }
+      });
+
       const school = await tx.school.create({
         data: {
           name: schoolName,
@@ -64,7 +69,8 @@ class TenantController {
     let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     if (result.school.slug) {
       if (frontendUrl.includes('localhost')) {
-        frontendUrl = frontendUrl.replace('localhost', `${result.school.slug}.localhost`);
+        // Use lvh.me for local subdomain resolution (points to 127.0.0.1 on Windows automatically)
+        frontendUrl = frontendUrl.replace('localhost', `${result.school.slug}.lvh.me`);
       } else {
         frontendUrl = frontendUrl.replace('://', `://${result.school.slug}.`);
       }
@@ -225,6 +231,23 @@ class TenantController {
       data: {
         name: school.name
       }
+    });
+  }
+
+  async listSchools(req, res) {
+    const schools = await basePrisma.school.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true
+      }
+    });
+
+    return res.status(200).json({
+      status: "success",
+      data: schools
     });
   }
 }

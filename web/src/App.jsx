@@ -11,6 +11,7 @@ import { Attendance } from './pages/Attendance/Attendance';
 import { Reports } from './pages/Reports/Reports';
 import { Activate } from './pages/Activate/Activate';
 import { SuperAdmin } from './pages/SuperAdmin/SuperAdmin';
+import { AuditLogs } from './pages/AuditLogs/AuditLogs';
 
 export function App() {
   return (
@@ -30,6 +31,7 @@ export function App() {
           <Route path="professoras" element={<Teachers />} />
           <Route path="presenca" element={<Attendance />} />
           <Route path="relatorios" element={<Reports />} />
+          <Route path="auditoria" element={<AuditLogs />} />
           <Route path="admin/convites" element={<SuperAdmin />} />
         </Route>
 

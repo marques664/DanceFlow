@@ -150,6 +150,9 @@ class LessonService {
         id: lessonId,
         class: { schoolId },
       },
+      include: {
+        class: true,
+      },
     });
 
     if (!lesson) {
@@ -191,9 +194,11 @@ class LessonService {
         data: {
           schoolId,
           userId,
-          action: "UPDATE_ATTENDANCE",
+          action: "REGISTER_ATTENDANCE",
           details: JSON.stringify({
             lessonId,
+            className: lesson.class.name,
+            date: lesson.date.toISOString().split("T")[0],
             isDraft,
             recordsCount: records.length,
           }),
@@ -233,10 +238,11 @@ class LessonService {
         data: {
           schoolId,
           userId,
-          action: "CREATE_LESSON",
+          action: "SCHEDULE_LESSON",
           details: JSON.stringify({
             lessonId: lesson.id,
-            classId,
+            className: c.name,
+            date: date,
             type,
           }),
         },
