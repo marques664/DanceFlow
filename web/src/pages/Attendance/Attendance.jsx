@@ -57,9 +57,52 @@ export function Attendance() {
   const [newLessonType, setNewLessonType] = useState('REGULAR');
   const [createLessonError, setCreateLessonError] = useState('');
 
+  const getDayOfWeekName = (dateStr) => {
+    const dayMap = {
+      0: "Domingo",
+      1: "Segunda",
+      2: "Terça",
+      3: "Quarta",
+      4: "Quinta",
+      5: "Sexta",
+      6: "Sábado",
+    };
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const dateObj = new Date(year, month, day);
+      return dayMap[dateObj.getDay()];
+    }
+    return '';
+  };
+
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  // Auto-select class that has schedule on selected date
+  useEffect(() => {
+    if (!date || classesList.length === 0) return;
+    
+    const currentDay = getDayOfWeekName(date);
+    if (!currentDay) return;
+    
+    // Check if currently selected class has a schedule on this day
+    const currentClassObj = classesList.find(c => c.id === selectedClass);
+    const hasScheduleToday = currentClassObj?.schedules?.some(s => s.dayOfWeek === currentDay);
+    
+    if (!hasScheduleToday) {
+      // Find first class that has a schedule on this day
+      const scheduledClass = classesList.find(c => 
+        c.schedules?.some(s => s.dayOfWeek === currentDay)
+      );
+      if (scheduledClass) {
+        setSelectedClass(scheduledClass.id);
+      }
+    }
+  }, [date, classesList]);
 
   useEffect(() => {
     if (selectedClass && date) {

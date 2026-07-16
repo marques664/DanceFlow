@@ -800,7 +800,9 @@ export function Students() {
               </div>
             )}
 
-            <form onSubmit={handleCreate} className={`modal-form student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
+            <form onSubmit={handleCreate} className="modal-form">
+              <div className="modal-form-scrollable-body">
+                <div className={`student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
               <div className="student-fields-section">
                 <h3>Dados da Aluna</h3>
 
@@ -1001,8 +1003,10 @@ export function Students() {
                   </div>
                 </div>
               )}
+              </div>
+            </div>
 
-              <div className="modal-footer full-width-footer">
+            <div className="modal-footer full-width-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1089,7 +1093,9 @@ export function Students() {
               </div>
             )}
 
-            <form onSubmit={handleConvert} className={`modal-form student-form-grid ${convertIsAdult ? 'no-guardian' : ''}`}>
+            <form onSubmit={handleConvert} className="modal-form">
+              <div className="modal-form-scrollable-body">
+                <div className={`student-form-grid ${convertIsAdult ? 'no-guardian' : ''}`}>
               <div className="student-fields-section">
                 <h3>Dados da Aluna</h3>
 
@@ -1231,9 +1237,10 @@ export function Students() {
                   </div>
                 </div>
               )}
+              </div>
+            </div>
 
-              {/* Form Actions Footer inside grid span */}
-              <div className="form-grid-actions-span">
+            <div className="modal-footer full-width-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1273,7 +1280,9 @@ export function Students() {
               </div>
             )}
 
-            <form onSubmit={handleEdit} className={`modal-form student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
+            <form onSubmit={handleEdit} className="modal-form">
+              <div className="modal-form-scrollable-body">
+                <div className={`student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
               <div className="student-fields-section">
                 <h3>Dados da Aluna</h3>
 
@@ -1569,8 +1578,10 @@ export function Students() {
                   </div>
                 </div>
               </div>
+              </div>
+            </div>
 
-              <div className="modal-footer full-width-footer" style={{ gridColumn: '1 / -1', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem' }}>
+            <div className="modal-footer full-width-footer" style={{ gridColumn: '1 / -1', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem' }}>
                 <button
                   type="button"
                   className="btn btn-secondary"

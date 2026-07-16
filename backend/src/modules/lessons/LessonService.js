@@ -3,6 +3,57 @@ const { AppError } = require("../../shared/errors/AppError");
 
 class LessonService {
   async list(schoolId, userRole, userId, { classId, dateStart, dateEnd }) {
+    // If querying a single class on a single day, check if we need to auto-create scheduled lessons on-demand
+    if (classId && dateStart && dateStart === dateEnd) {
+      const existingLessons = await prisma.lesson.findMany({
+        where: {
+          classId,
+          date: new Date(dateStart + "T00:00:00.000Z"),
+        },
+      });
+
+      if (existingLessons.length === 0) {
+        const dbClass = await prisma.class.findFirst({
+          where: { id: classId, schoolId, isActive: true },
+          include: { schedules: true },
+        });
+
+        if (dbClass) {
+          const dayMap = {
+            0: "Domingo",
+            1: "Segunda",
+            2: "Terça",
+            3: "Quarta",
+            4: "Quinta",
+            5: "Sexta",
+            6: "Sábado",
+          };
+          const dateObj = new Date(dateStart + "T12:00:00");
+          const dayOfWeekName = dayMap[dateObj.getDay()];
+
+          const matchedSchedules = dbClass.schedules.filter(
+            (s) => s.dayOfWeek === dayOfWeekName
+          );
+
+          if (matchedSchedules.length > 0) {
+            const newLessonsData = matchedSchedules.map((sch) => ({
+              classId,
+              date: new Date(dateStart + "T00:00:00.000Z"),
+              timeStart: sch.timeStart,
+              timeEnd: sch.timeEnd,
+              type: "REGULAR",
+              status: "SCHEDULED",
+              scheduleId: sch.id,
+            }));
+
+            await prisma.lesson.createMany({
+              data: newLessonsData,
+            });
+          }
+        }
+      }
+    }
+
     const where = {
       class: {
         schoolId,

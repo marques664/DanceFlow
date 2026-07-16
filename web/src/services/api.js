@@ -1,4 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  return `${protocol}//${hostname}:3333`;
+};
+
+const API_URL = getApiUrl();
 
 function getTenantSlug() {
   const hostname = window.location.hostname;
