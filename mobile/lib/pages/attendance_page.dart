@@ -173,7 +173,7 @@ class _AttendancePageState extends State<AttendancePage> {
                   padding: const EdgeInsets.all(16),
                   color: const Color(0xFF1E293B),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

@@ -216,7 +216,7 @@ class _LessonsPageState extends State<LessonsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.between,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
@@ -261,7 +261,7 @@ class _LessonsPageState extends State<LessonsPage> {
                                   ),
                                   const Divider(height: 24, color: Colors.white10),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.between,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
