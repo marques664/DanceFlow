@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, AlertCircle, X, User, Info, FileText, Trash2, Check, Loader, UserCheck } from 'lucide-react';
+import { Plus, Search, AlertCircle, X, User, Info, FileText, Trash2, Check, Loader, UserCheck, Edit } from 'lucide-react';
 import { api } from '../../services/api';
 import { getCurrentUser } from '../../services/auth';
 import './Students.css';
@@ -18,6 +18,10 @@ export function Students() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showInactivateModal, setShowInactivateModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editClasses, setEditClasses] = useState([]);
+  const [newClassId, setNewClassId] = useState('');
+  const [newScheduleIds, setNewScheduleIds] = useState([]);
 
   // Form State
   const [name, setName] = useState('');
@@ -256,6 +260,138 @@ export function Students() {
     }
   };
 
+  const handleOpenEdit = async (student) => {
+    setFormError('');
+    setFormLoading(true);
+    setSelectedStudent(student);
+    try {
+      const details = await api.get(`/students/${student.id}`);
+      setName(details.name);
+      if (details.birthDate) {
+        setBirthDate(new Date(details.birthDate).toISOString().split('T')[0]);
+      } else {
+        setBirthDate('');
+      }
+      setPhone(details.phone);
+      setPlan(details.plan);
+      setNotes(details.notes || '');
+
+      if (details.guardian) {
+        setGuardianName(details.guardian.name);
+        setGuardianPhone(details.guardian.phone);
+        setGuardianEmail(details.guardian.email || '');
+        setGuardianKinship(details.guardian.kinship);
+        setIsAdult(false);
+      } else {
+        setGuardianName('');
+        setGuardianPhone('');
+        setGuardianEmail('');
+        setGuardianKinship('Mãe');
+        setIsAdult(true);
+      }
+
+      setEditClasses(details.classEnrollments || []);
+
+      const defaultClassId = classesList[0]?.id || '';
+      setNewClassId(defaultClassId);
+      if (defaultClassId) {
+        const targetClass = classesList.find(c => c.id === defaultClassId);
+        setNewScheduleIds(targetClass?.schedules?.map(s => s.id) || []);
+      } else {
+        setNewScheduleIds([]);
+      }
+
+      setShowEditModal(true);
+    } catch (err) {
+      console.error('Erro ao carregar detalhes da aluna:', err);
+      setError('Erro ao carregar detalhes da aluna.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleRemoveClass = (classId) => {
+    setEditClasses(prev => prev.filter(c => c.classId !== classId));
+  };
+
+  const handleAddClass = () => {
+    if (!newClassId) return;
+    if (editClasses.some(c => c.classId === newClassId)) {
+      setFormError('Esta aluna já está vinculada a esta turma.');
+      return;
+    }
+    if (newScheduleIds.length === 0) {
+      setFormError('Selecione pelo menos um horário de aula.');
+      return;
+    }
+    const targetClass = classesList.find(c => c.id === newClassId);
+    if (!targetClass) return;
+
+    setEditClasses(prev => [...prev, {
+      classId: newClassId,
+      className: targetClass.name,
+      scheduleIds: newScheduleIds
+    }]);
+
+    setFormError('');
+  };
+
+  const handleNewClassChange = (classId) => {
+    setNewClassId(classId);
+    if (classId) {
+      const targetClass = classesList.find(c => c.id === classId);
+      setNewScheduleIds(targetClass?.schedules?.map(s => s.id) || []);
+    } else {
+      setNewScheduleIds([]);
+    }
+  };
+
+  const handleNewScheduleToggle = (scheduleId) => {
+    setNewScheduleIds(prev => 
+      prev.includes(scheduleId) 
+        ? prev.filter(id => id !== scheduleId) 
+        : [...prev, scheduleId]
+    );
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const hasGuardian = !isAdult;
+    if (!name.trim() || !birthDate || !phone.trim() || (hasGuardian && (!guardianName.trim() || !guardianPhone.trim()))) {
+      setFormError('Por favor, preencha todos os campos obrigatórios (*).');
+      return;
+    }
+
+    setFormLoading(true);
+    setFormError('');
+    try {
+      await api.put(`/students/${selectedStudent.id}`, {
+        name,
+        birthDate,
+        phone,
+        plan,
+        notes: notes.trim() || undefined,
+        guardian: hasGuardian ? {
+          name: guardianName.trim(),
+          phone: guardianPhone.trim(),
+          email: guardianEmail.trim() || undefined,
+          kinship: guardianKinship
+        } : null,
+        classes: editClasses.map(c => ({
+          classId: c.classId,
+          scheduleIds: c.scheduleIds
+        }))
+      });
+
+      setShowEditModal(false);
+      fetchStudents();
+    } catch (err) {
+      setFormError(err.message || 'Erro ao atualizar dados da aluna.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.guardian && s.guardian.name && s.guardian.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -393,6 +529,16 @@ export function Students() {
                     >
                       <Info size={16} />
                     </button>
+                    {isAdmin && (
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleOpenEdit(s)}
+                        title="Editar cadastro"
+                        style={{ color: '#3b82f6', marginRight: '0.5rem' }}
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
                     {isAdmin && (
                       <button
                         className="action-btn delete-btn"
@@ -1102,6 +1248,343 @@ export function Students() {
                   disabled={formLoading}
                 >
                   {formLoading ? 'Salvando...' : 'Confirmar Matrícula'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT STUDENT MODAL */}
+      {showEditModal && (
+        <div className="modal-backdrop">
+          <div className={`modal-content glass-card animate-fade-in student-form-modal ${isAdult ? 'no-guardian' : ''}`}>
+            <div className="modal-header">
+              <h2>Editar Cadastro de Aluna</h2>
+              <button className="modal-close-btn" onClick={() => setShowEditModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="modal-error">
+                <AlertCircle size={16} />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleEdit} className={`modal-form student-form-grid ${isAdult ? 'no-guardian' : ''}`}>
+              <div className="student-fields-section">
+                <h3>Dados da Aluna</h3>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="edit-student-name">Nome Completo *</label>
+                  <input
+                    id="edit-student-name"
+                    type="text"
+                    className="form-input"
+                    placeholder="Nome da aluna"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={formLoading}
+                    required
+                  />
+                </div>
+
+                <div className="form-row-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-student-birth">Data de Nascimento *</label>
+                    <input
+                      id="edit-student-birth"
+                      type="date"
+                      className="form-input"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      disabled={formLoading}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-student-phone">Telefone *</label>
+                    <input
+                      id="edit-student-phone"
+                      type="text"
+                      className="form-input"
+                      placeholder="(11) 99999-9999"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      disabled={formLoading}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="edit-student-plan">Plano *</label>
+                  <select
+                    id="edit-student-plan"
+                    className="form-input form-select"
+                    value={plan}
+                    onChange={(e) => setPlan(e.target.value)}
+                    disabled={formLoading}
+                  >
+                    <option value="Mensal">Mensal</option>
+                    <option value="Semestral">Semestral</option>
+                    <option value="Anual">Anual</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="edit-student-notes">Observações</label>
+                  <textarea
+                    id="edit-student-notes"
+                    className="form-input text-area"
+                    rows="3"
+                    placeholder="Restrições médicas, alergias ou observações gerais..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    disabled={formLoading}
+                  />
+                </div>
+
+                <div className="form-checkbox-group">
+                  <input
+                    type="checkbox"
+                    id="edit-student-adult"
+                    checked={isAdult}
+                    onChange={(e) => setIsAdult(e.target.checked)}
+                    disabled={formLoading}
+                  />
+                  <label htmlFor="edit-student-adult">Aluna maior de idade (+18 anos - dispensa responsável)</label>
+                </div>
+              </div>
+
+              {/* GUARDIAN INFO */}
+              {!isAdult && (
+                <div className="guardian-fields-section">
+                  <h3>Responsável Financeiro / Operacional</h3>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-guardian-name">Nome do Responsável *</label>
+                    <input
+                      id="edit-guardian-name"
+                      type="text"
+                      className="form-input"
+                      placeholder="Nome do pai, mãe ou tutor"
+                      value={guardianName}
+                      onChange={(e) => setGuardianName(e.target.value)}
+                      disabled={formLoading}
+                      required={!isAdult}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-guardian-kinship">Parentesco *</label>
+                    <select
+                      id="edit-guardian-kinship"
+                      className="form-input form-select"
+                      value={guardianKinship}
+                      onChange={(e) => setGuardianKinship(e.target.value)}
+                      disabled={formLoading}
+                      required={!isAdult}
+                    >
+                      <option value="Mãe">Mãe</option>
+                      <option value="Pai">Pai</option>
+                      <option value="Avó/Avô">Avó/Avô</option>
+                      <option value="Tio/Tia">Tio/Tia</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+
+                  <div className="form-row-2">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="edit-guardian-phone">Telefone *</label>
+                      <input
+                        id="edit-guardian-phone"
+                        type="text"
+                        className="form-input"
+                        placeholder="(11) 99999-9999"
+                        value={guardianPhone}
+                        onChange={(e) => setGuardianPhone(e.target.value)}
+                        disabled={formLoading}
+                        required={!isAdult}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="edit-guardian-email">E-mail</label>
+                      <input
+                        id="edit-guardian-email"
+                        type="email"
+                        className="form-input"
+                        placeholder="responsavel@email.com"
+                        value={guardianEmail}
+                        onChange={(e) => setGuardianEmail(e.target.value)}
+                        disabled={formLoading}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CLASS ENROLLMENT MANAGEMENT */}
+              <div className="class-enrollment-management-section full-width-span" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem' }}>
+                <h3>Gerenciamento de Turmas e Horários</h3>
+
+                {/* CURRENT CLASSES LIST */}
+                <div className="current-classes-group" style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Turmas Vinculadas Atualmente:</label>
+                  {editClasses.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic', margin: '0.5rem 0 0 0' }}>
+                      Nenhuma turma vinculada a esta aluna.
+                    </p>
+                  ) : (
+                    <div className="classes-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      {editClasses.map((c) => (
+                        <div 
+                          key={c.classId} 
+                          className="class-card-item glass-card"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.6rem 0.8rem',
+                            borderRadius: '8px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            minWidth: '220px'
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: 600, color: 'var(--text-white)' }}>{c.className}</span>
+                            <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              {c.scheduleIds.length} horário(s) selecionado(s)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-remove-class"
+                            onClick={() => handleRemoveClass(c.classId)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '0.2rem',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title="Remover aluna desta turma"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* ADD NEW CLASS SUBFORM */}
+                <div 
+                  className="add-new-class-wrapper glass-card"
+                  style={{
+                    padding: '1.25rem',
+                    borderRadius: '10px',
+                    background: 'rgba(0,0,0,0.15)',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    marginTop: '1rem'
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-white)', fontSize: '0.95rem' }}>Matricular em Nova Turma</h4>
+                  <div 
+                    className="add-class-form"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr',
+                      gap: '1rem'
+                    }}
+                  >
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label" htmlFor="new-student-class">Escolher Turma</label>
+                      <select
+                        id="new-student-class"
+                        className="form-input form-select"
+                        value={newClassId}
+                        onChange={(e) => handleNewClassChange(e.target.value)}
+                        disabled={formLoading}
+                      >
+                        {classesList.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.modality})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* DYNAMIC SCHEDULE CHECKBOXES */}
+                    {newClassId && (
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label">Selecionar Horários de Aula *</label>
+                        <div 
+                          className="schedule-options-checkboxes"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.6rem',
+                            marginTop: '0.4rem',
+                            background: 'rgba(0,0,0,0.1)',
+                            padding: '0.8rem',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255,255,255,0.03)'
+                          }}
+                        >
+                          {(classesList.find(c => c.id === newClassId)?.schedules || []).map((sch) => (
+                            <div key={sch.id} className="checkbox-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <input
+                                type="checkbox"
+                                id={`new-sch-${sch.id}`}
+                                checked={newScheduleIds.includes(sch.id)}
+                                onChange={() => handleNewScheduleToggle(sch.id)}
+                              />
+                              <label htmlFor={`new-sch-${sch.id}`} style={{ color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                                {sch.dayOfWeek} das {sch.timeStart} às {sch.timeEnd}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleAddClass}
+                      style={{
+                        justifySelf: 'start',
+                        marginTop: '0.5rem',
+                        padding: '0.5rem 1rem'
+                      }}
+                    >
+                      Vincular Turma Selecionada
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer full-width-footer" style={{ gridColumn: '1 / -1', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={formLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={formLoading}
+                >
+                  {formLoading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </form>

@@ -37,6 +37,12 @@ const updateStudentSchema = z.object({
   notes: z.string().trim().optional(),
   plan: studentPlanSchema.optional(),
   guardian: guardianSchema.optional().nullable(),
+  classes: z.array(
+    z.object({
+      classId: z.string().uuid("ID de turma inválido."),
+      scheduleIds: z.array(z.string().uuid("ID de horário inválido."))
+    })
+  ).optional(),
 });
 
 class StudentController {

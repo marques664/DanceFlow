@@ -162,6 +162,7 @@ class StudentService {
         classes: {
           include: {
             class: true,
+            schedules: true,
           },
         },
       },
@@ -182,6 +183,11 @@ class StudentService {
       plan: student.plan,
       status: student.isActive ? "Ativa" : "Inativa",
       classes: student.classes.map((c) => c.class.name),
+      classEnrollments: student.classes.map((c) => ({
+        classId: c.classId,
+        className: c.class.name,
+        scheduleIds: c.schedules.map((s) => s.id)
+      })),
       guardian: mainLink ? {
         id: mainLink.guardian.id,
         name: mainLink.guardian.name,
@@ -192,7 +198,7 @@ class StudentService {
     };
   }
 
-  async update(schoolId, userId, id, { name, birthDate, phone, notes, plan, guardian }) {
+  async update(schoolId, userId, id, { name, birthDate, phone, notes, plan, guardian, classes }) {
     return prisma.$transaction(async (tx) => {
       // 1. Check if student exists
       const student = await tx.student.findFirst({
@@ -319,6 +325,53 @@ class StudentService {
           email: existingLink.guardian.email,
           kinship: existingLink.kinship,
         };
+      }
+
+      // 4. Update class associations if provided
+      if (classes !== undefined) {
+        // Fetch current active class associations for this student
+        const currentLinks = await tx.classStudent.findMany({
+          where: { studentId: id },
+          include: { schedules: true }
+        });
+
+        const newClassIds = classes.map(c => c.classId);
+
+        // Delete class links that are NOT in the new list
+        const linksToRemove = currentLinks.filter(link => !newClassIds.includes(link.classId));
+        for (const link of linksToRemove) {
+          await tx.classStudent.delete({
+            where: { id: link.id }
+          });
+        }
+
+        // Add or update class links that ARE in the new list
+        for (const newClass of classes) {
+          const existingLink = currentLinks.find(link => link.classId === newClass.classId);
+
+          if (existingLink) {
+            // Update schedules. Use set to replace all related schedules with the new set
+            await tx.classStudent.update({
+              where: { id: existingLink.id },
+              data: {
+                schedules: {
+                  set: newClass.scheduleIds.map(schId => ({ id: schId }))
+                }
+              }
+            });
+          } else {
+            // Create new class association
+            await tx.classStudent.create({
+              data: {
+                studentId: id,
+                classId: newClass.classId,
+                schedules: {
+                  connect: newClass.scheduleIds.map(schId => ({ id: schId }))
+                }
+              }
+            });
+          }
+        }
       }
 
       return {
