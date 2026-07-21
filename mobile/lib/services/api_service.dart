@@ -6,7 +6,7 @@ class ApiService {
   // Centralized API Base URL (Configurable via --dart-define=API_URL=https://your-app.up.railway.app)
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://192.168.0.6:3333',
+    defaultValue: 'https://danceflow-production.up.railway.app',
   );
   
   static Future<String?> getToken() async {
