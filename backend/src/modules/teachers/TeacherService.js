@@ -80,7 +80,7 @@ class TeacherService {
 
     // 4. Build Activation URL
     let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    if (school.slug) {
+    if (school.slug && !frontendUrl.includes('vercel.app')) {
       if (frontendUrl.includes('localhost')) {
         // Use lvh.me for local subdomain resolution (points to 127.0.0.1 on Windows automatically)
         frontendUrl = frontendUrl.replace('localhost', `${school.slug}.lvh.me`);
