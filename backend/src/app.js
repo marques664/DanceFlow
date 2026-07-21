@@ -45,6 +45,16 @@ app.use(express.json());
 // Request context middleware
 app.use(contextMiddleware);
 
+// Public Root Endpoint
+app.get("/", (req, res) => {
+  return res.status(200).json({
+    name: "DanceFlow API",
+    status: "online",
+    message: "Welcome to DanceFlow backend service.",
+    healthCheck: "/health"
+  });
+});
+
 // Public Health Check Endpoint
 app.use("/health", healthRouter);
 
