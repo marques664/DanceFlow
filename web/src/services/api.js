@@ -4,7 +4,7 @@ const getApiUrl = () => {
   }
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  return `${protocol}//${hostname}:3333`;
+  return `${protocol}//${hostname}`;
 };
 
 const API_URL = getApiUrl();
