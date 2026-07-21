@@ -42,7 +42,7 @@ class _AttendancePageState extends State<AttendancePage> {
       final response = await ApiService.get('/lessons/${widget.lessonId}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> eligibleStudents = data['eligibleStudents'] ?? [];
+        final List<dynamic> eligibleStudents = data['students'] ?? [];
         
         final Map<String, String> initialMap = {};
         for (var student in eligibleStudents) {

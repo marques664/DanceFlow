@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android Emulator, or localhost for iOS/web.
-  static const String baseUrl = 'http://192.168.0.65:3333';
+  static const String baseUrl = 'http://192.168.0.6:3333';
   
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
