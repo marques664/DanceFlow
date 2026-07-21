@@ -11,6 +11,9 @@ const API_URL = getApiUrl();
 
 function getTenantSlug() {
   const hostname = window.location.hostname;
+  if (hostname.endsWith('.vercel.app')) {
+    return null;
+  }
   const parts = hostname.split('.');
   if (parts.length > 1 && !['localhost', '127', 'www', 'app'].includes(parts[0]) && !/^\d+$/.test(parts[0])) {
     return parts[0];
