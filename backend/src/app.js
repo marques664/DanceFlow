@@ -17,16 +17,23 @@ const { teacherRouter } = require("./modules/teachers/teacher.routes");
 const { lessonRouter } = require("./modules/lessons/lesson.routes");
 const { dashboardRouter } = require("./modules/dashboard/dashboard.routes");
 const { auditRouter } = require("./modules/audit/audit.routes");
+const { healthRouter } = require("./modules/health/health.routes");
 
 const app = express();
 
 // Security Headers (Helmet)
 app.use(helmet());
 
-// CORS config (supporting tenant subdomains in production, localhost in development)
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [/\.danceflow\.com$/] 
-  : [/^http:\/\/localhost:/, /^http:\/\/127\.0\.0\.1:/, /^http:\/\/(.*\.)?lvh\.me:/];
+// CORS config (supporting tenant subdomains in production, Railway domains, and custom origins)
+const customCorsOrigin = process.env.CORS_ORIGIN;
+const defaultOrigins = process.env.NODE_ENV === 'production' 
+  ? [/\.danceflow\.com$/, /\.up\.railway\.app$/] 
+  : [/^http:\/\/localhost:/, /^http:\/\/127\.0\.0\.1:/, /^http:\/\/(.*\.)?lvh\.me:/, /\.up\.railway\.app$/];
+
+const allowedOrigins = customCorsOrigin 
+  ? [...defaultOrigins, customCorsOrigin] 
+  : defaultOrigins;
+
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
@@ -37,6 +44,9 @@ app.use(express.json());
 
 // Request context middleware
 app.use(contextMiddleware);
+
+// Public Health Check Endpoint
+app.use("/health", healthRouter);
 
 // Global Rate Limiting
 const globalLimiter = rateLimit({
