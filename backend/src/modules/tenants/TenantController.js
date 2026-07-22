@@ -67,7 +67,6 @@ class TenantController {
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const slug = result.school.slug;
     const token = result.tokenRecord.token;
     
     let activationUrl;
