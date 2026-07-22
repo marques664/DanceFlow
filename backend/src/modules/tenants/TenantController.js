@@ -67,7 +67,24 @@ class TenantController {
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const activationUrl = `${frontendUrl}/ativar?token=${result.tokenRecord.token}`;
+    const slug = result.school.slug;
+    const token = result.tokenRecord.token;
+    
+    let activationUrl;
+    if (frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1') || frontendUrl.includes('lvh.me')) {
+      // Local dev: use lvh.me subdomain for tenant resolution
+      let localUrl = frontendUrl.includes('localhost') 
+        ? frontendUrl.replace('localhost', 'lvh.me') 
+        : frontendUrl;
+      if (slug) {
+        localUrl = localUrl.replace('://', `://${slug}.`);
+      }
+      activationUrl = `${localUrl}/ativar?token=${token}`;
+    } else {
+      // Production (Vercel): keep main domain and append slug as query parameter for brand recognition
+      const slugQuery = slug ? `&slug=${slug}` : '';
+      activationUrl = `${frontendUrl}/ativar?token=${token}${slugQuery}`;
+    }
 
     // 3. Send email convite
     await emailService.sendActivationEmail(adminEmail, schoolName, activationUrl);
