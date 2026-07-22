@@ -66,16 +66,25 @@ class TenantController {
       return { school, tokenRecord: activationToken };
     });
 
-    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    if (result.school.slug && !frontendUrl.includes('vercel.app')) {
-      if (frontendUrl.includes('localhost')) {
-        // Use lvh.me for local subdomain resolution (points to 127.0.0.1 on Windows automatically)
-        frontendUrl = frontendUrl.replace('localhost', `${result.school.slug}.lvh.me`);
-      } else {
-        frontendUrl = frontendUrl.replace('://', `://${result.school.slug}.`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const slug = result.school.slug;
+    const token = result.tokenRecord.token;
+    
+    let activationUrl;
+    if (frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1') || frontendUrl.includes('lvh.me')) {
+      // Local dev: use lvh.me subdomain for tenant resolution
+      let localUrl = frontendUrl.includes('localhost') 
+        ? frontendUrl.replace('localhost', 'lvh.me') 
+        : frontendUrl;
+      if (slug) {
+        localUrl = localUrl.replace('://', `://${slug}.`);
       }
+      activationUrl = `${localUrl}/ativar?token=${token}`;
+    } else {
+      // Production (Vercel): keep main domain and append slug as query parameter for brand recognition
+      const slugQuery = slug ? `&slug=${slug}` : '';
+      activationUrl = `${frontendUrl}/ativar?token=${token}${slugQuery}`;
     }
-    const activationUrl = `${frontendUrl}/ativar?token=${result.tokenRecord.token}`;
 
     // 3. Send email convite
     await emailService.sendActivationEmail(adminEmail, schoolName, activationUrl);
