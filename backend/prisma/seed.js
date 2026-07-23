@@ -320,6 +320,292 @@ async function main() {
     }
   }
 
+  // === SEED DATA FOR BALLET COPACABANA ===
+  console.log("\nSeeding Ballet Copacabana...");
+
+  // 1. Create/find Ballet Copacabana School
+  let copacabanaSchool = await prisma.school.findFirst({
+    where: {
+      OR: [
+        { name: "Ballet Copacabana" },
+        { slug: "ballet-copacabana" }
+      ]
+    }
+  });
+
+  if (!copacabanaSchool) {
+    copacabanaSchool = await prisma.school.create({
+      data: {
+        name: "Ballet Copacabana",
+        slug: "ballet-copacabana"
+      }
+    });
+  } else if (!copacabanaSchool.slug) {
+    copacabanaSchool = await prisma.school.update({
+      where: { id: copacabanaSchool.id },
+      data: { slug: "ballet-copacabana" }
+    });
+  }
+
+  console.log(`School created/found: ${copacabanaSchool.name} (${copacabanaSchool.id})`);
+
+  // 2. Create Admin user for Ballet Copacabana
+  const copaAdminEmail = "copacabana.admin@danceflow.com";
+
+  const copaAdmin = await prisma.user.upsert({
+    where: { email: copaAdminEmail },
+    update: {},
+    create: {
+      name: "Admin Ballet Copacabana",
+      email: copaAdminEmail,
+      password: adminPasswordHash,
+      role: "ADMIN",
+      isActive: true,
+      schoolId: copacabanaSchool.id,
+    },
+  });
+
+  console.log(`Copa Admin user created/found: ${copaAdmin.name} (${copaAdmin.email})`);
+
+  // 3. Create Teacher user for Ballet Copacabana
+  const copaTeacherEmail = "copacabana.teacher@danceflow.com";
+  const copaTeacherPasswordHash = bcrypt.hashSync("teacher123", 10);
+
+  const copaTeacher = await prisma.user.upsert({
+    where: { email: copaTeacherEmail },
+    update: {},
+    create: {
+      name: "Professora Copacabana",
+      email: copaTeacherEmail,
+      password: copaTeacherPasswordHash,
+      role: "TEACHER",
+      isActive: true,
+      schoolId: copacabanaSchool.id,
+    },
+  });
+
+  console.log(`Copa Teacher user created/found: ${copaTeacher.name} (${copaTeacher.email})`);
+
+  // 4. Create modalities for Ballet Copacabana
+  const copaModalities = [
+    { name: "Ballet Clássico", description: "Técnica clássica de ballet" },
+    { name: "Jazz Moderno", description: "Ritmo, expressão e técnica de Jazz" },
+    { name: "Sapateado", description: "Controle rítmico e musicalidade" },
+  ];
+
+  const modalityMap = {};
+  for (const mod of copaModalities) {
+    const dbMod = await prisma.modality.upsert({
+      where: {
+        schoolId_name: {
+          schoolId: copacabanaSchool.id,
+          name: mod.name,
+        },
+      },
+      update: {},
+      create: {
+        name: mod.name,
+        description: mod.description,
+        schoolId: copacabanaSchool.id,
+        isActive: true,
+      },
+    });
+    modalityMap[mod.name] = dbMod;
+    console.log(`Copa Modality created/found: ${mod.name}`);
+  }
+
+  // 5. Create students and guardians for Ballet Copacabana
+  const copaStudentsData = [
+    {
+      name: "Carolina Santos",
+      birthDate: new Date("2018-12-04"),
+      phone: "(21) 98888-1111",
+      plan: "Mensal",
+      notes: "Muito dedicada. Gosta de saltos e diagonais.",
+      guardian: {
+        name: "Clara Santos",
+        phone: "(21) 98888-1111",
+        email: "clara.santos@example.com",
+        kinship: "Mãe"
+      }
+    },
+    {
+      name: "Gabriela Costa",
+      birthDate: new Date("2017-08-14"),
+      phone: "(21) 97777-2222",
+      plan: "Semestral",
+      notes: "Concentrada, excelente equilíbrio e postura.",
+      guardian: {
+        name: "Gilberto Costa",
+        phone: "(21) 97777-2222",
+        email: "gilberto.c@example.com",
+        kinship: "Pai"
+      }
+    },
+    {
+      name: "Juliana Menezes",
+      birthDate: new Date("2015-05-19"),
+      phone: "(21) 96666-3333",
+      plan: "Anual",
+      notes: "Muito ágil, foco em sapateado rápido.",
+      guardian: {
+        name: "Julia Menezes",
+        phone: "(21) 96666-3333",
+        email: "julia.m@example.com",
+        kinship: "Mãe"
+      }
+    },
+    {
+      name: "Alice Pereira",
+      birthDate: new Date("2020-01-30"),
+      phone: "(21) 95555-4444",
+      plan: "Mensal",
+      notes: "Baby ballet, primeira experiência na dança.",
+      guardian: {
+        name: "Aline Pereira",
+        phone: "(21) 95555-4444",
+        email: "aline.p@example.com",
+        kinship: "Mãe"
+      }
+    }
+  ];
+
+  for (const s of copaStudentsData) {
+    let student = await prisma.student.findFirst({
+      where: {
+        schoolId: copacabanaSchool.id,
+        name: s.name
+      }
+    });
+
+    if (!student) {
+      student = await prisma.student.create({
+        data: {
+          name: s.name,
+          birthDate: s.birthDate,
+          phone: s.phone,
+          plan: s.plan,
+          notes: s.notes,
+          schoolId: copacabanaSchool.id,
+          isActive: true
+        }
+      });
+      console.log(`Copa Student created: ${student.name}`);
+
+      let guardian = await prisma.guardian.findFirst({
+        where: {
+          name: s.guardian.name,
+          phone: s.guardian.phone
+        }
+      });
+
+      if (!guardian) {
+        guardian = await prisma.guardian.create({
+          data: {
+            name: s.guardian.name,
+            phone: s.guardian.phone,
+            email: s.guardian.email
+          }
+        });
+        console.log(`Copa Guardian created: ${guardian.name}`);
+      }
+
+      await prisma.studentGuardian.create({
+        data: {
+          studentId: student.id,
+          guardianId: guardian.id,
+          kinship: s.guardian.kinship
+        }
+      });
+    }
+  }
+
+  // 6. Create classes, schedules, enrollments, and lessons for Ballet Copacabana
+  const copaClassesData = [
+    {
+      name: "Ballet Infantil Copacabana",
+      modalityName: "Ballet Clássico",
+      schedules: [
+        { dayOfWeek: "Segunda", timeStart: "15:00", timeEnd: "16:00" },
+        { dayOfWeek: "Quarta", timeStart: "15:00", timeEnd: "16:00" }
+      ],
+      studentNames: ["Carolina Santos", "Gabriela Costa", "Alice Pereira"]
+    },
+    {
+      name: "Jazz Juvenil Copacabana",
+      modalityName: "Jazz Moderno",
+      schedules: [
+        { dayOfWeek: "Terça", timeStart: "16:30", timeEnd: "17:30" },
+        { dayOfWeek: "Quinta", timeStart: "16:30", timeEnd: "17:30" }
+      ],
+      studentNames: ["Gabriela Costa", "Juliana Menezes"]
+    }
+  ];
+
+  for (const c of copaClassesData) {
+    let dbClass = await prisma.class.findFirst({
+      where: {
+        schoolId: copacabanaSchool.id,
+        name: c.name
+      }
+    });
+
+    if (!dbClass) {
+      const activeMod = modalityMap[c.modalityName];
+      
+      dbClass = await prisma.class.create({
+        data: {
+          name: c.name,
+          schoolId: copacabanaSchool.id,
+          modalityId: activeMod.id,
+          mainTeacherId: copaTeacher.id,
+          isActive: true
+        }
+      });
+      console.log(`Copa Class created: ${dbClass.name}`);
+
+      // Create schedules
+      const createdSchedules = [];
+      for (const sch of c.schedules) {
+        const dbSchedule = await prisma.classSchedule.create({
+          data: {
+            classId: dbClass.id,
+            dayOfWeek: sch.dayOfWeek,
+            timeStart: sch.timeStart,
+            timeEnd: sch.timeEnd
+          }
+        });
+        createdSchedules.push(dbSchedule);
+      }
+
+      // Enroll students
+      for (const sName of c.studentNames) {
+        const student = await prisma.student.findFirst({ where: { schoolId: copacabanaSchool.id, name: sName } });
+        if (student) {
+          await prisma.classStudent.create({
+            data: {
+              classId: dbClass.id,
+              studentId: student.id,
+              schedules: {
+                connect: createdSchedules.map(s => ({ id: s.id }))
+              }
+            }
+          });
+          console.log(`Enrolled ${student.name} in Copa class ${dbClass.name}`);
+        }
+      }
+
+      // Generate lessons
+      const lessons = generateInitialLessonsForClass(dbClass.id, createdSchedules, new Date("2026-07-01"));
+      for (const l of lessons) {
+        await prisma.lesson.create({
+          data: l
+        });
+      }
+      console.log(`Generated ${lessons.length} lessons for Copa class ${dbClass.name}`);
+    }
+  }
+
   console.log("Database seeded successfully!");
 }
 
