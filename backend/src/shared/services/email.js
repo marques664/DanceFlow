@@ -1,6 +1,15 @@
 const nodemailer = require('nodemailer');
 const { logger } = require("../utils/logger");
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 class EmailService {
   async sendActivationEmail(email, schoolName, activationUrl) {
     const message = `
@@ -38,12 +47,15 @@ Este link expira em 48 horas.
           }
         });
 
+        const safeSchoolName = escapeHtml(schoolName);
+        const safeActivationUrl = escapeHtml(activationUrl);
+
         await transporter.sendMail({
           from: EMAIL_FROM || '"DanceFlow" <nao-responder@danceflow.com>',
           to: email,
           subject: `Convite para ativação de conta: ${schoolName}`,
           text: `Olá! Sua escola "${schoolName}" foi cadastrada com sucesso no DanceFlow.\n\nPara definir sua senha de acesso e ativar sua conta administradora, acesse o link a seguir:\n\n${activationUrl}\n\nEste link expira em 48 horas.`,
-          html: `<p>Olá!</p><p>Sua escola <strong>"${schoolName}"</strong> foi cadastrada com sucesso no DanceFlow.</p><p>Para definir sua senha de acesso e ativar sua conta administradora, clique no link a seguir:</p><p><a href="${activationUrl}" target="_blank">${activationUrl}</a></p><p>Este link expira em 48 horas.</p>`
+          html: `<p>Olá!</p><p>Sua escola <strong>"${safeSchoolName}"</strong> foi cadastrada com sucesso no DanceFlow.</p><p>Para definir sua senha de acesso e ativar sua conta administradora, clique no link a seguir:</p><p><a href="${safeActivationUrl}" target="_blank">${safeActivationUrl}</a></p><p>Este link expira em 48 horas.</p>`
         });
 
         logger.info("Real SMTP activation email sent successfully", { email, schoolName });
